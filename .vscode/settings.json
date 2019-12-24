@@ -1,4 +1,6 @@
 {
-    "python.pythonPath": "/Users/mattbrown/.pyenv/versions/advent-of-code-2019/bin/python",
-    "python.linting.enabled": true
+  "python.pythonPath": "/Users/mattbrown/.pyenv/versions/advent-of-code-2019/bin/python",
+  "python.linting.enabled": true,
+  "python.formatting.provider": "black",
+  "editor.formatOnSave": true
 }
