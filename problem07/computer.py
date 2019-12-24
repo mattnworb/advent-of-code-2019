@@ -34,10 +34,6 @@ class Computer(object):
 
     # opcode 1
     def add(self):
-        # addr1, addr2 = self.opcodes[self.pos + 1], self.opcodes[self.pos + 2]
-        # out = self.opcodes[self.pos + 3]
-        # val1, val2 = self.opcodes[addr1], self.opcodes[addr2]
-
         param1 = self.opcodes[self.pos + 1]
         param2 = self.opcodes[self.pos + 2]
         param3 = self.opcodes[self.pos + 3]
@@ -49,19 +45,10 @@ class Computer(object):
             self.opcodes[param3] = a + b
         # immediate mode, nothing to store
 
-        # self.log(f'add: position {addr1} ({val1}) and {addr2} ({val2}) and storing in position {out}')
-
-        # self.opcodes[out]= val1 + val2
         self.pos += 4
 
     # opcode 2
     def mult(self):
-        # addr1, addr2 = self.opcodes[self.pos + 1], self.opcodes[self.pos + 2]
-        # out = self.opcodes[self.pos + 3]
-        # val1, val2 = self.opcodes[addr1], self.opcodes[addr2]
-        #
-        # self.log(f'mult: position {addr1} ({val1}) and {addr2} ({val2}) and storing in position {out}')
-
         param1 = self.opcodes[self.pos + 1]
         param2 = self.opcodes[self.pos + 2]
         param3 = self.opcodes[self.pos + 3]
@@ -91,9 +78,6 @@ class Computer(object):
     # Opcode 4 outputs the value of its only parameter. For example,
     # the instruction 4,50 would output the value at address 50.
     def send_output(self):
-        # addr = self.opcodes[self.pos+1]
-        # self.log(f'send_output: outputting addr={addr} val={self.opcodes[addr]}')
-
         val = self.read_value(0, self.opcodes[self.pos + 1])
         self.log(f"send_output: outputting {val}")
         self.outputfn(val)
