@@ -17,8 +17,7 @@ class TestProblem02:
 
         for ops, expected in cases:
             assert (
-                Computer(ops, input_val=0, outputfn=print, verbose=False).run()
-                == expected
+                Computer(ops, inputs=0, outputfn=print, verbose=False).run() == expected
             )
 
 
@@ -32,7 +31,7 @@ def is_one(v):
 
 class TestProblem06:
     def test_parse_instruction(self):
-        c = Computer([1002, 4, 3, 4], input_val=1, outputfn=print)
+        c = Computer([1002, 4, 3, 4], inputs=1, outputfn=print)
         c.parse_instruction(1002)
 
         assert c.current_op == 2
@@ -42,7 +41,7 @@ class TestProblem06:
         opcodes = [3, 9, 8, 9, 10, 9, 4, 9, 99, -1, 8]
 
         # 1 is not 8
-        result = Computer(opcodes, input_val=1, outputfn=is_zero, verbose=False).run()
+        result = Computer(opcodes, inputs = 1, outputfn=is_zero, verbose=False).run()
 
         # 8 is 8
-        result = Computer(opcodes, input_val=8, outputfn=is_one, verbose=False).run()
+        result = Computer(opcodes, inputs=8, outputfn=is_one, verbose=False).run()

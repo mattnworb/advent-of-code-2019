@@ -12,10 +12,15 @@ NUM_PARAMS = {
 
 
 class Computer(object):
-    def __init__(self, opcodes, input_val, outputfn, verbose=True):
+    def __init__(self, opcodes, inputs, outputfn, verbose=True):
         self.opcodes = list(opcodes)  # make a copy
         self.pos = 0
-        self.input = input_val
+
+        if isinstance(inputs, int):
+            self.input_iterator = iter([inputs])
+        else:
+            self.input_iterator = iter(inputs)
+
         self.outputfn = outputfn
 
         self.current_op = None
@@ -76,11 +81,10 @@ class Computer(object):
     def save_input(self):
         dst = self.opcodes[self.pos + 1]
 
-        # self.log(f'save_input: storing val={self.input} to dst={dst}')
-
         if self.param_modes[0] == 0:
-            self.log(f"save_input: storing {self.input} in address {dst}")
-            self.opcodes[dst] = self.input
+            next_input = self.input_iterator.__next__()
+            self.log(f"save_input: storing {next_input} in address {dst}")
+            self.opcodes[dst] = next_input
 
         self.pos += 2
 
