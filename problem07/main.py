@@ -34,14 +34,3 @@ def run_amplifiers(count, phase_settings, opcodes):
 
 def parse_program(program_string):
     return list(map(int, program_string.split(",")))
-
-
-if __name__ == "__main__":
-    with open("input", "r") as f:
-        my_input = f.readlines()
-
-    possible_phase_settings = permutations([0, 1, 2, 3, 4], 5)
-
-    max_val, phases = find_max_thruster(parse_program(my_input))
-
-    print(max_val)
