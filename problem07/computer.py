@@ -12,7 +12,7 @@ NUM_PARAMS = {
 
 
 class Computer(object):
-    def __init__(self, opcodes, inputs, verbose=True):
+    def __init__(self, opcodes, inputs, verbose=False):
         self.opcodes = list(opcodes)  # make a copy
         self.pos = 0
 
