@@ -16,9 +16,9 @@ class TestProblem02:
         ]
 
         for ops, expected in cases:
-            assert (
-                Computer(ops, inputs=0, outputfn=print, verbose=False).run() == expected
-            )
+            c = Computer(ops, inputs=0, verbose=False)
+            c.run()
+            assert c.opcodes == expected
 
 
 def is_zero(v):
@@ -38,7 +38,7 @@ def expect_output(n):
 
 class TestProblem06:
     def test_parse_instruction(self):
-        c = Computer([1002, 4, 3, 4], inputs=1, outputfn=print)
+        c = Computer([1002, 4, 3, 4], inputs=1)
         c.parse_instruction(1002)
 
         assert c.current_op == 2
@@ -48,48 +48,48 @@ class TestProblem06:
         opcodes = [3, 9, 8, 9, 10, 9, 4, 9, 99, -1, 8]
 
         # 1 is not 8
-        result = Computer(opcodes, inputs=1, outputfn=is_zero, verbose=False).run()
+        assert [0] == Computer(opcodes, inputs=1, verbose=False).run()
 
         # 8 is 8
-        result = Computer(opcodes, inputs=8, outputfn=is_one, verbose=False).run()
+        assert [1] == Computer(opcodes, inputs=8, verbose=False).run()
 
     def test_part2_example2(self):
         opcodes = [3, 9, 7, 9, 10, 9, 4, 9, 99, -1, 8]
 
         # is input less than 8?
         # 1 is less than 8
-        result = Computer(opcodes, inputs=1, outputfn=is_one, verbose=False).run()
+        assert [1] == Computer(opcodes, inputs=1, verbose=False).run()
 
         # 8 and 9 are not less than 8
-        result = Computer(opcodes, inputs=8, outputfn=is_zero, verbose=False).run()
-        result = Computer(opcodes, inputs=9, outputfn=is_zero, verbose=False).run()
+        assert [0] == Computer(opcodes, inputs=8, verbose=False).run()
+        assert [0] == Computer(opcodes, inputs=9, verbose=False).run()
 
     def test_part2_example3(self):
         opcodes = [3, 3, 1108, -1, 8, 3, 4, 3, 99]
 
         # is input equal to 8?
-        result = Computer(opcodes, inputs=1, outputfn=is_zero, verbose=False).run()
-        result = Computer(opcodes, inputs=9, outputfn=is_zero, verbose=False).run()
-        result = Computer(opcodes, inputs=8, outputfn=is_one, verbose=False).run()
+        assert [0] == Computer(opcodes, inputs=1, verbose=False).run()
+        assert [0] == Computer(opcodes, inputs=9, verbose=False).run()
+        assert [1] == Computer(opcodes, inputs=8, verbose=False).run()
 
     def test_part2_example4(self):
         opcodes = [3, 3, 1107, -1, 8, 3, 4, 3, 99]
 
-        result = Computer(opcodes, inputs=1, outputfn=is_one, verbose=False).run()
-        result = Computer(opcodes, inputs=9, outputfn=is_zero, verbose=False).run()
-        result = Computer(opcodes, inputs=8, outputfn=is_zero, verbose=False).run()
+        assert [1] == Computer(opcodes, inputs=1, verbose=False).run()
+        assert [0] == Computer(opcodes, inputs=9, verbose=False).run()
+        assert [0] == Computer(opcodes, inputs=8, verbose=False).run()
 
     def test_part2_example5(self):
         opcodes = [3, 12, 6, 12, 15, 1, 13, 14, 13, 4, 13, 99, -1, 0, 1, 9]
 
-        result = Computer(opcodes, inputs=0, outputfn=is_zero, verbose=False).run()
-        result = Computer(opcodes, inputs=1, outputfn=is_one, verbose=False).run()
+        assert [0] == Computer(opcodes, inputs=0, verbose=False).run()
+        assert [1] == Computer(opcodes, inputs=1, verbose=False).run()
 
     def test_part2_example6(self):
         opcodes = [3, 3, 1105, -1, 9, 1101, 0, 0, 12, 4, 12, 99, 1]
 
-        result = Computer(opcodes, inputs=0, outputfn=is_zero, verbose=False).run()
-        result = Computer(opcodes, inputs=1, outputfn=is_one, verbose=False).run()
+        assert [0] == Computer(opcodes, inputs=0, verbose=False).run()
+        assert [1] == Computer(opcodes, inputs=1, verbose=False).run()
 
     def test_part2_example7(self):
         opcodes = [
@@ -143,17 +143,10 @@ class TestProblem06:
         ]
 
         # output 999 if the input value is below 8
-        result = Computer(
-            opcodes, inputs=0, outputfn=expect_output(999), verbose=False
-        ).run()
+        assert [999] == Computer(opcodes, inputs=0, verbose=False).run()
 
         # output 1000 if the input value is equal to 8
-        result = Computer(
-            opcodes, inputs=8, outputfn=expect_output(1000), verbose=False
-        ).run()
+        assert [1000] == Computer(opcodes, inputs=8, verbose=False).run()
 
         # output 1001 if the input value is greater than 8.
-        result = Computer(
-            opcodes, inputs=10, outputfn=expect_output(1001), verbose=False
-        ).run()
-
+        assert [1001] == Computer(opcodes, inputs=10, verbose=False).run()

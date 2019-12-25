@@ -12,7 +12,7 @@ NUM_PARAMS = {
 
 
 class Computer(object):
-    def __init__(self, opcodes, inputs, outputfn, verbose=True):
+    def __init__(self, opcodes, inputs, verbose=True):
         self.opcodes = list(opcodes)  # make a copy
         self.pos = 0
 
@@ -20,8 +20,6 @@ class Computer(object):
             self.input_iterator = iter([inputs])
         else:
             self.input_iterator = iter(inputs)
-
-        self.outputfn = outputfn
 
         self.current_op = None
         self.param_modes = []
@@ -79,8 +77,8 @@ class Computer(object):
     # the instruction 4,50 would output the value at address 50.
     def send_output(self):
         val = self.read_value(0, self.opcodes[self.pos + 1])
-        self.log(f"send_output: outputting {val}")
-        self.outputfn(val)
+        self.log(f"send_output: adding {val} to output")
+        self.output.append(val)
 
         self.pos += 2
 
@@ -190,9 +188,12 @@ class Computer(object):
         raise ValueError(f"unknown param mode: {mode}")
 
     def run(self):
-        value = 0
-
+        """
+        Runs the program. Returns the output. To check the program after running, look at .opcodes.
+        """
         self.log(f"starting program: {self.opcodes}")
+
+        self.output = []
 
         while self.pos < len(self.opcodes):
             self.log(f"\nrun: at position={self.pos} opcodes={self.opcodes}")
@@ -225,7 +226,7 @@ class Computer(object):
 
             elif self.current_op == 99:
                 self.log(f"halt, returning: {self.opcodes}")
-                return self.opcodes
+                return self.output
                 # break
 
             else:
