@@ -1,3 +1,5 @@
+import queue
+
 NUM_PARAMS = {
     1: 3,  # addition: two operands and the storage location
     2: 3,  # multiplication
@@ -28,10 +30,12 @@ class Computer(object):
         self.opcodes = list(opcodes)  # make a copy
         self.pos = 0
 
+        self.input_queue = queue.Queue()
         if isinstance(inputs, int):
-            self.input_iterator = iter([inputs])
+            self.add_input(inputs)
         else:
-            self.input_iterator = iter(inputs)
+            for i in inputs:
+                self.add_input(i)
 
         self.current_op = None
         self.param_modes = []
@@ -41,6 +45,10 @@ class Computer(object):
     def log(self, msg):
         if self.verbose:
             print(msg)
+
+    def add_input(self, val):
+        """Add input val to end of input queue"""
+        self.input_queue.put(val, block=False)
 
     # opcode 1
     def add(self):
@@ -80,7 +88,7 @@ class Computer(object):
         dst = self.opcodes[self.pos + 1]
 
         if self.param_modes[0] == 0:
-            next_input = self.input_iterator.__next__()
+            next_input = self.input_queue.get(block=False)
             self.log(f"read_input: storing {next_input} in address {dst}")
             self.opcodes[dst] = next_input
 
