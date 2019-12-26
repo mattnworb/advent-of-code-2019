@@ -3,20 +3,21 @@ from itertools import permutations
 from .computer import Computer
 
 
-def find_max_thruster(program):
+def find_max_thruster(program, feedback_mode=False):
     possible_phase_settings = permutations([0, 1, 2, 3, 4], 5)
 
     max_val = 0
 
     for phase_setting in possible_phase_settings:
-        val = run_amplifiers(5, phase_setting, program)
+        val = run_amplifiers(5, phase_setting, program, feedback_mode)
         if val > max_val:
             max_val = val
             max_phase_setting = phase_setting
+
     return max_val, max_phase_setting
 
 
-def run_amplifiers(count, phase_settings, opcodes):
+def run_amplifiers(count, phase_settings, opcodes, feedback_mode=False):
     assert count == len(phase_settings)
 
     output_from_last = 0

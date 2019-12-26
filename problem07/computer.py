@@ -1,13 +1,25 @@
 NUM_PARAMS = {
     1: 3,  # addition: two operands and the storage location
     2: 3,  # multiplication
-    3: 1,  # save_input
-    4: 1,  # send_output,
+    3: 1,  # read_input
+    4: 1,  # store_output,
     5: 2,  # jump-if-true
     6: 2,  # jump-if-false
     7: 3,  # less-than
     8: 3,  # equals
     99: 0,  # halt
+}
+
+OP_NAMES = {
+    1: "ADD",
+    2: "MULT",
+    3: "READ_INPUT",
+    4: "WRITE_OUTPUT",
+    5: "JUMP_IF_TRUE",
+    6: "JUMP_IF_FALSE",
+    7: "LESS_THAN",
+    8: "EQUALS",
+    99: "HALT",
 }
 
 
@@ -41,7 +53,7 @@ class Computer(object):
 
         if self.param_modes[2] == 0:
             self.opcodes[param3] = a + b
-        # immediate mode, nothing to store
+            self.log(f"add {a} + {b}, storing result in pos {param3}")
 
         self.pos += 4
 
@@ -56,6 +68,7 @@ class Computer(object):
 
         if self.param_modes[2] == 0:
             self.opcodes[param3] = a * b
+            self.log(f"mult {a} * {b}, storing result in pos {param3}")
 
         self.pos += 4
 
@@ -63,21 +76,21 @@ class Computer(object):
     # Opcode 3 takes a single integer as input and saves it to the position
     # given by its only parameter. For example, the instruction 3,50 would
     # take an input value and store it at address 50.
-    def save_input(self):
+    def read_input(self):
         dst = self.opcodes[self.pos + 1]
 
         if self.param_modes[0] == 0:
             next_input = self.input_iterator.__next__()
-            self.log(f"save_input: storing {next_input} in address {dst}")
+            self.log(f"read_input: storing {next_input} in address {dst}")
             self.opcodes[dst] = next_input
 
         self.pos += 2
 
     # Opcode 4 outputs the value of its only parameter. For example,
     # the instruction 4,50 would output the value at address 50.
-    def send_output(self):
+    def store_output(self):
         val = self.read_value(0, self.opcodes[self.pos + 1])
-        self.log(f"send_output: adding {val} to output")
+        self.log(f"store_output: adding {val} to output")
         self.output.append(val)
 
         self.pos += 2
@@ -85,8 +98,12 @@ class Computer(object):
     def jump_if_true(self):
         # if the first parameter is non-zero, it sets the instruction pointer
         # to the value from the second parameter. Otherwise, it does nothing.
-        if self.read_value(0, self.opcodes[self.pos + 1]) != 0:
-            self.pos = self.read_value(1, self.opcodes[self.pos + 2])
+        p = self.read_value(0, self.opcodes[self.pos + 1])
+        self.log(f"jump_if_true: testing if {p} != 0")
+        if p != 0:
+            pos = self.read_value(1, self.opcodes[self.pos + 2])
+            self.log(f"jump_if_true: jumping to {pos}")
+            self.pos = pos
         else:
             self.pos += 3
 
@@ -96,9 +113,9 @@ class Computer(object):
         p = self.read_value(0, self.opcodes[self.pos + 1])
         self.log(f"jump_if_false: testing if {p} == 0")
         if p == 0:
-            new_ip = self.read_value(1, self.opcodes[self.pos + 2])
-            self.log(f"jump_if_false: updating instruction pointer to {new_ip}")
-            self.pos = new_ip
+            pos = self.read_value(1, self.opcodes[self.pos + 2])
+            self.log(f"jump_if_false: jumping to {pos}")
+            self.pos = pos
         else:
             self.pos += 3
 
@@ -161,7 +178,7 @@ class Computer(object):
             b *= 10
 
         self.log(
-            f"parse_instruction: inst={inst}, storing current_op={opcode} param_modes={param_modes}"
+            f"parse_instruction: inst={inst}, storing current_op={opcode} ({OP_NAMES[opcode]}) param_modes={param_modes}"
         )
         self.current_op = opcode
         self.param_modes = param_modes
@@ -196,38 +213,51 @@ class Computer(object):
         self.output = []
 
         while self.pos < len(self.opcodes):
-            self.log(f"\nrun: at position={self.pos} opcodes={self.opcodes}")
-
-            self.parse_instruction(self.opcodes[self.pos])
-
-            if self.current_op == 1:
-                self.add()
-
-            elif self.current_op == 2:
-                self.mult()
-
-            elif self.current_op == 3:
-                self.save_input()
-
-            elif self.current_op == 4:
-                self.send_output()
-
-            elif self.current_op == 5:
-                self.jump_if_true()
-
-            elif self.current_op == 6:
-                self.jump_if_false()
-
-            elif self.current_op == 7:
-                self.less_than()
-
-            elif self.current_op == 8:
-                self.equal()
-
-            elif self.current_op == 99:
-                self.log(f"halt, returning: {self.opcodes}")
+            halted = self.run_one_iteration()
+            if halted:
                 return self.output
-                # break
 
-            else:
-                raise ValueError(f"unknown opcode: {self.current_op}")
+    def run_one_iteration(self):
+        self.log(f"\nrun: at position={self.pos} opcodes={self.opcodes}")
+
+        self.parse_instruction(self.opcodes[self.pos])
+
+        if self.current_op == 1:
+            self.add()
+            return False
+
+        elif self.current_op == 2:
+            self.mult()
+            return False
+
+        elif self.current_op == 3:
+            self.read_input()
+            return False
+
+        elif self.current_op == 4:
+            self.store_output()
+            return False
+
+        elif self.current_op == 5:
+            self.jump_if_true()
+            return False
+
+        elif self.current_op == 6:
+            self.jump_if_false()
+            return False
+
+        elif self.current_op == 7:
+            self.less_than()
+            return False
+
+        elif self.current_op == 8:
+            self.equal()
+            return False
+
+        elif self.current_op == 99:
+            self.log(f"halt, returning: {self.opcodes}")
+            return True
+            # break
+
+        else:
+            raise ValueError(f"unknown opcode: {self.current_op}")
