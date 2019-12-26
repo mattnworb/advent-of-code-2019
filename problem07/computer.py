@@ -1,5 +1,14 @@
 import queue
 
+from enum import Enum
+
+
+class RunResult(Enum):
+    RUNNABLE = 0
+    HALTED = 1
+    BLOCK_ON_INPUT = 2
+
+
 NUM_PARAMS = {
     1: 3,  # addition: two operands and the storage location
     2: 3,  # multiplication
@@ -39,6 +48,8 @@ class Computer(object):
 
         self.current_op = None
         self.param_modes = []
+        self.run_until_block_mode = False
+        self.halted = False
 
         self.verbose = verbose
 
@@ -88,11 +99,15 @@ class Computer(object):
         dst = self.opcodes[self.pos + 1]
 
         if self.param_modes[0] == 0:
-            next_input = self.input_queue.get(block=False)
+            if self.run_until_block_mode and self.input_queue.empty():
+                return True
+            else:
+                next_input = self.input_queue.get(block=False)
             self.log(f"read_input: storing {next_input} in address {dst}")
             self.opcodes[dst] = next_input
 
         self.pos += 2
+        return False
 
     # Opcode 4 outputs the value of its only parameter. For example,
     # the instruction 4,50 would output the value at address 50.
@@ -212,60 +227,72 @@ class Computer(object):
 
         raise ValueError(f"unknown param mode: {mode}")
 
-    def run(self):
+    def run(self, until_blocked=False):
         """
-        Runs the program. Returns the output. To check the program after running, look at .opcodes.
+        Runs the program until halted, or if until_blocked is True, stops when blocked on input. Returns the output. 
+        To check the program after running, look at .opcodes.
         """
+
+        if self.halted:
+            raise ValueError("Cannot run halted computer")
+
+        self.run_until_block_mode = until_blocked
+
         self.log(f"starting program: {self.opcodes}")
 
         self.output = []
 
         while self.pos < len(self.opcodes):
-            halted = self.run_one_iteration()
-            if halted:
-                return self.output
+            result = self.run_one_iteration()
+            if result == RunResult.HALTED:
+                self.halted = True
+                return self.output, result
+            elif result == RunResult.BLOCK_ON_INPUT and until_blocked == True:
+                return self.output, result
 
-    def run_one_iteration(self):
+    def run_one_iteration(self) -> RunResult:
+        """Runs one instruction of the program."""
         self.log(f"\nrun: at position={self.pos} opcodes={self.opcodes}")
 
         self.parse_instruction(self.opcodes[self.pos])
 
         if self.current_op == 1:
             self.add()
-            return False
+            return RunResult.RUNNABLE
 
         elif self.current_op == 2:
             self.mult()
-            return False
+            return RunResult.RUNNABLE
 
         elif self.current_op == 3:
-            self.read_input()
-            return False
+            blocked = self.read_input()
+            if blocked:
+                return RunResult.BLOCK_ON_INPUT
+            return RunResult.RUNNABLE
 
         elif self.current_op == 4:
             self.store_output()
-            return False
+            return RunResult.RUNNABLE
 
         elif self.current_op == 5:
             self.jump_if_true()
-            return False
+            return RunResult.RUNNABLE
 
         elif self.current_op == 6:
             self.jump_if_false()
-            return False
+            return RunResult.RUNNABLE
 
         elif self.current_op == 7:
             self.less_than()
-            return False
+            return RunResult.RUNNABLE
 
         elif self.current_op == 8:
             self.equal()
-            return False
+            return RunResult.RUNNABLE
 
         elif self.current_op == 99:
             self.log(f"halt, returning: {self.opcodes}")
-            return True
-            # break
+            return RunResult.HALTED
 
         else:
             raise ValueError(f"unknown opcode: {self.current_op}")
