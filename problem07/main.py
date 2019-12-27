@@ -1,6 +1,6 @@
 from itertools import permutations
 
-from .computer import Computer
+from computer import Computer
 
 
 def find_max_thruster(program, feedback_mode=False):
