@@ -1,4 +1,11 @@
-from .computer import Computer, RunResult, parse_program
+from .computer import Computer, ParamMode, RunResult, parse_program
+
+
+def test_parse_instruction():
+    c = Computer([1002, 4, 3, 4], inputs=1)
+    c.parse_instruction(203)
+    assert c.current_op == 3
+    assert c.param_modes == [ParamMode.RELATIVE]
 
 
 class TestProblem02:
@@ -16,7 +23,7 @@ class TestProblem02:
         ]
 
         for ops, expected in cases:
-            c = Computer(ops, inputs=0)
+            c = Computer(ops, inputs=0, verbose=True)
             c.run()
             assert c.memory == expected
 
@@ -27,7 +34,11 @@ class TestProblem06:
         c.parse_instruction(1002)
 
         assert c.current_op == 2
-        assert c.param_modes == [0, 1, 0]
+        assert c.param_modes == [
+            ParamMode.POSITION,
+            ParamMode.IMMEDIATE,
+            ParamMode.POSITION,
+        ]
 
     def test_part2_example1(self):
         opcodes = [3, 9, 8, 9, 10, 9, 4, 9, 99, -1, 8]
@@ -77,55 +88,9 @@ class TestProblem06:
         assert [1], RunResult.HALTED == Computer(opcodes, inputs=1).run()
 
     def test_part2_example7(self):
-        opcodes = [
-            3,
-            21,
-            1008,
-            21,
-            8,
-            20,
-            1005,
-            20,
-            22,
-            107,
-            8,
-            21,
-            20,
-            1006,
-            20,
-            31,
-            1106,
-            0,
-            36,
-            98,
-            0,
-            0,
-            1002,
-            21,
-            125,
-            20,
-            4,
-            20,
-            1105,
-            1,
-            46,
-            104,
-            999,
-            1105,
-            1,
-            46,
-            1101,
-            1000,
-            1,
-            20,
-            4,
-            20,
-            1105,
-            1,
-            46,
-            98,
-            99,
-        ]
+        opcodes = parse_program(
+            "3,21,1008,21,8,20,1005,20,22,107,8,21,20,1006,20,31,1106,0,36,98,0,0,1002,21,125,20,4,20,1105,1,46,104,999,1105,1,46,1101,1000,1,20,4,20,1105,1,46,98,99"
+        )
 
         # output 999 if the input value is below 8
         assert [999], RunResult.HALTED == Computer(opcodes, inputs=0).run()
@@ -160,4 +125,25 @@ class TestProblem09:
         """104,1125899906842624,99 should output the large number in the middle."""
         program = parse_program("104,1125899906842624,99")
         outputs, result = Computer(program, inputs=[], verbose=True).run()
-        assert outputs[0] == 1125899906842624
+        assert outputs == [1125899906842624]
+
+    def test_read_input_relative_param(self):
+        """
+        My first pass at part 01 failed with an output of [203, 0], suggesting
+        that the handling of the READ_INPUT op in relative param mode is buggy.
+        """
+        program = parse_program(
+            # adjust relative base to 0 + 5
+            "109,5,"
+            # read input, store at relative addr 4 (plus base above = 9)
+            + "203,4,"
+            # mult addr 9 times 2, store result back in addr 9
+            + "1002,9,2,9,"
+            # output relative address 4 (plus base above = 9)
+            + "204,4,"
+            # halt
+            + "99"
+        )
+        outputs, result = Computer(program, inputs=[2], verbose=True).run()
+        # 2 * 2 = 4
+        assert outputs == [4]

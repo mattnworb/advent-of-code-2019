@@ -1,12 +1,18 @@
+from enum import Enum, unique
 import queue
-
-from enum import Enum
 
 
 class RunResult(Enum):
     RUNNABLE = 0
     HALTED = 1
     BLOCK_ON_INPUT = 2
+
+
+@unique
+class ParamMode(Enum):
+    POSITION = 0
+    IMMEDIATE = 1
+    RELATIVE = 2
 
 
 MAX_MEMORY = 2000
@@ -45,7 +51,6 @@ def parse_program(program_string):
 class Computer(object):
     def __init__(self, opcodes, inputs, verbose=False):
         self.memory = list(opcodes)  # make a copy
-        self.original_opcodes = list(opcodes)
         self.pos = 0
 
         self.input_queue = queue.Queue()
@@ -71,36 +76,74 @@ class Computer(object):
         """Reads one value from memory"""
 
         if absolute is not None:
-            p = absolute
+            addr = absolute
 
         elif offset is not None:
-            p = self.pos + offset
+            addr = self.pos + offset
 
         else:
             raise ValueError("Must pass either absolute or offset kwarg")
 
-        self.extend_memory_if_necessary(p)
-        return self.memory[p]
+        self.extend_memory_if_necessary(addr)
+        value = self.memory[addr]
+        # self.log(f"read: reading address={addr} value={value}")
+        return value
 
-    def write(self, val, absolute=None, offset=None):
-        """Writes one value to memory"""
+    def write(self, value, addr):
+        """Writes value to memory at address addr"""
+        self.extend_memory_if_necessary(addr)
+        # self.log(f"write: writing address={addr} value={value}")
+        self.memory[addr] = value
 
-        if absolute is not None:
-            p = absolute
+    def read_param(self, param_num):
+        """Reads a value from memory based on the given parameter number (one-indexed)."""
+        assert param_num > 0
 
-        elif offset is not None:
-            p = self.pos + offset
+        mode = self.param_modes[param_num - 1]
+        param_value = self.read(offset=param_num)
+        self.log(
+            f"read_param: param_num={param_num} mode={mode} param_value={param_value}"
+        )
+
+        if mode == ParamMode.POSITION:
+            return self.read(absolute=param_value)
+
+        elif mode == ParamMode.IMMEDIATE:
+            return param_value
+
+        elif mode == ParamMode.RELATIVE:
+            return self.read(absolute=(self.relative_base + param_value))
 
         else:
-            raise ValueError("Must pass either absolute or offset kwarg")
+            raise ValueError(f"unknown param mode: {mode}")
 
-        self.extend_memory_if_necessary(p)
-        self.memory[p] = val
+    def write_param(self, param_num, value):
+        """Write a value to memory based on the given parameter number (one-indexed)."""
+        assert param_num > 0
+
+        mode = self.param_modes[param_num - 1]
+        param_value = self.read(offset=param_num)
+        self.log(
+            f"write_param: param_num={param_num} mode={mode} param_value={param_value}"
+        )
+
+        if mode == ParamMode.POSITION:
+            self.write(value, addr=param_value)
+
+        elif mode == ParamMode.IMMEDIATE:
+            # do nothing
+            pass
+
+        elif mode == ParamMode.RELATIVE:
+            self.write(value, addr=(self.relative_base + param_value))
+
+        else:
+            raise ValueError(f"unknown param mode: {mode}")
 
     def extend_memory_if_necessary(self, pos):
         assert (
             pos < MAX_MEMORY
-        ), f"pos={pos} is too high for max memory setting ({MAX_MEMORY})"
+        ), f"pos={pos} is too high, max memory setting ({MAX_MEMORY})"
 
         while pos >= len(self.memory):
             self.memory.append(0)
@@ -111,31 +154,21 @@ class Computer(object):
 
     # opcode 1
     def add(self):
-        param1 = self.read(offset=1)
-        param2 = self.read(offset=2)
-        param3 = self.read(offset=3)
+        a = self.read_param(1)
+        b = self.read_param(2)
 
-        a = self.read_value(0, param1)
-        b = self.read_value(1, param2)
-
-        if self.param_modes[2] == 0:
-            self.write(a + b, absolute=param3)
-            self.log(f"add {a} + {b}, storing result in pos {param3}")
+        self.log(f"adding {a} + {b}")
+        self.write_param(3, a + b)
 
         self.pos += 4
 
     # opcode 2
     def mult(self):
-        param1 = self.read(offset=1)
-        param2 = self.read(offset=2)
-        param3 = self.read(offset=3)
+        a = self.read_param(1)
+        b = self.read_param(2)
 
-        a = self.read_value(0, param1)
-        b = self.read_value(1, param2)
-
-        if self.param_modes[2] == 0:
-            self.write(a * b, absolute=param3)
-            self.log(f"mult {a} * {b}, storing result in pos {param3}")
+        self.log(f"mult {a} * {b}")
+        self.write_param(3, a * b)
 
         self.pos += 4
 
@@ -144,15 +177,12 @@ class Computer(object):
     # given by its only parameter. For example, the instruction 3,50 would
     # take an input value and store it at address 50.
     def read_input(self):
-        dst = self.read(offset=1)
+        if self.run_until_block_mode and self.input_queue.empty():
+            return True
 
-        if self.param_modes[0] == 0:
-            if self.run_until_block_mode and self.input_queue.empty():
-                return True
-            else:
-                next_input = self.input_queue.get(block=False)
-            self.log(f"read_input: storing {next_input} in address {dst}")
-            self.write(next_input, absolute=dst)
+        next_input = self.input_queue.get(block=False)
+        self.log(f"read_input: input is {next_input}")
+        self.write_param(1, next_input)
 
         self.pos += 2
         return False
@@ -160,8 +190,8 @@ class Computer(object):
     # Opcode 4 outputs the value of its only parameter. For example,
     # the instruction 4,50 would output the value at address 50.
     def store_output(self):
-        val = self.read_value(0, self.read(offset=1))
-        self.log(f"store_output: adding {val} to output")
+        val = self.read_param(1)
+        self.log(f"store_output: outputting: {val}")
         self.output.append(val)
 
         self.pos += 2
@@ -169,10 +199,10 @@ class Computer(object):
     def jump_if_true(self):
         # if the first parameter is non-zero, it sets the instruction pointer
         # to the value from the second parameter. Otherwise, it does nothing.
-        p = self.read_value(0, self.read(offset=1))
-        self.log(f"jump_if_true: testing if {p} != 0")
+        p = self.read_param(1)
+        self.log(f"jump_if_true: testing if {p} is non-zero")
         if p != 0:
-            pos = self.read_value(1, self.read(offset=2))
+            pos = self.read_param(2)
             self.log(f"jump_if_true: jumping to {pos}")
             self.pos = pos
         else:
@@ -181,10 +211,10 @@ class Computer(object):
     def jump_if_false(self):
         # if the first parameter is zero, it sets the instruction pointer
         # to the value from the second parameter. Otherwise, it does nothing.
-        p = self.read_value(0, self.read(offset=1))
-        self.log(f"jump_if_false: testing if {p} == 0")
+        p = self.read_param(1)
+        self.log(f"jump_if_false: testing if {p} is zero")
         if p == 0:
-            pos = self.read_value(1, self.read(offset=2))
+            pos = self.read_param(2)
             self.log(f"jump_if_false: jumping to {pos}")
             self.pos = pos
         else:
@@ -193,41 +223,33 @@ class Computer(object):
     def less_than(self):
         # if the first parameter is less than the second parameter, it stores 1
         # in the position given by the third parameter. Otherwise, it stores 0.
-        a = self.read_value(0, self.read(offset=1))
-        b = self.read_value(1, self.read(offset=2))
+        a = self.read_param(1)
+        b = self.read_param(2)
 
-        if self.param_modes[2] == 0:
-            dst = self.read(offset=3)
-            self.log(f"less_than: testing if {a} < {b}, storing answer in {dst}")
-            if a < b:
-                self.write(1, absolute=dst)
-            else:
-                self.write(0, absolute=dst)
+        val = 1 if a < b else 0
+        self.log(f"less_than: testing if {a} < {b}, result={val}")
+        self.write_param(3, val)
 
         self.pos += 4
 
     def equal(self):
         # if the first parameter is equal to the second parameter, it stores 1
         # in the position given by the third parameter. Otherwise, it stores 0.
-        a = self.read_value(0, self.read(offset=1))
-        b = self.read_value(1, self.read(offset=2))
+        a = self.read_param(1)
+        b = self.read_param(2)
 
-        if self.param_modes[2] == 0:
-            dst = self.read(offset=3)
-
-            self.log(f"equal: testing if {a} == {b}, storing output in address {dst}")
-
-            if a == b:
-                self.write(1, absolute=dst)
-            else:
-                self.write(0, absolute=dst)
+        val = 1 if a == b else 0
+        self.log(f"equal: testing if {a} == {b}, result={val}")
+        self.write_param(3, val)
 
         self.pos += 4
 
     def adjust_relative_base(self):
-        param = self.read_value(0, self.read(offset=1))
-        self.relative_base += param
-        self.log(f"adjust_relative_base: new base is {self.relative_base}")
+        adjustment = self.read_param(1)
+        self.log(
+            f"adjust_relative_base: relative_base={self.relative_base}, offset={adjustment}, new base={self.relative_base + adjustment}"
+        )
+        self.relative_base += adjustment
 
         self.pos += 2
 
@@ -251,7 +273,8 @@ class Computer(object):
         # start with hundreds digit
         a, b = 1000, 100
         for c in range(param_count):
-            param_modes.append(inst % a // b)
+            mode = ParamMode(inst % a // b)
+            param_modes.append(mode)
             a *= 10
             b *= 10
 
@@ -260,46 +283,6 @@ class Computer(object):
         )
         self.current_op = opcode
         self.param_modes = param_modes
-
-    def read_value(self, param_num, val):
-        """
-        Right now, your ship computer already understands parameter mode 0,
-        position mode, which causes the parameter to be interpreted as a
-        position - if the parameter is 50, its value is the value stored at
-        address 50 in memory. Until now, all parameters have been in position
-        mode.
-
-        Now, your ship computer will also need to handle parameters in mode 1,
-        immediate mode. In immediate mode, a parameter is interpreted as a
-        value: if the parameter is 50, its value is simply 50.
-
-        Parameters in mode 2, relative mode, behave very similarly to parameters
-        in position mode: the parameter is interpreted as a position. Like
-        position mode, parameters in relative mode can be read from or written
-        to.
-
-        The important difference is that relative mode parameters don't count
-        from address 0. Instead, they count from a value called the relative
-        base. The relative base starts at 0.
-        """
-        mode = self.param_modes[param_num]
-
-        if mode == 0:
-            self.log(f"read_value: param_num={param_num} param={val} = position mode")
-            return self.read(absolute=val)
-
-        elif mode == 1:
-            self.log(f"read_value: param_num={param_num} param={val} = immediate mode")
-            return val
-
-        elif mode == 2:
-            self.log(
-                f"read_value: param_num={param_num} param={val} relative_base={self.relative_base} = relative mode"
-            )
-            dst = self.relative_base + val
-            return self.read(absolute=dst)
-
-        raise ValueError(f"unknown param mode: {mode}")
 
     def run(self, until_blocked=False):
         """
@@ -369,7 +352,7 @@ class Computer(object):
             return RunResult.RUNNABLE
 
         elif self.current_op == 99:
-            self.log(f"halt")
+            self.log(f"halt - output: {self.output}")
             return RunResult.HALTED
 
         else:
