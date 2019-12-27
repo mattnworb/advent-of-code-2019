@@ -14,8 +14,9 @@ if __name__ == "__main__":
 
     program = computer.parse_program(inp)
 
-    c = computer.Computer(program, inputs=1, verbose=True)
+    c = computer.Computer(program, inputs=1, verbose=False)
     outputs, result = c.run()
 
     assert result == computer.RunResult.HALTED
+    print("Part 1:")
     print(outputs)
