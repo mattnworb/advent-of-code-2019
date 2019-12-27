@@ -9,6 +9,8 @@ class RunResult(Enum):
     BLOCK_ON_INPUT = 2
 
 
+MAX_MEMORY = 2000
+
 NUM_PARAMS = {
     1: 3,  # addition: two operands and the storage location
     2: 3,  # multiplication
@@ -69,25 +71,39 @@ class Computer(object):
         """Reads one value from memory"""
 
         if absolute is not None:
-            return self.memory[absolute]
+            p = absolute
 
         elif offset is not None:
-            return self.memory[self.pos + offset]
+            p = self.pos + offset
 
         else:
             raise ValueError("Must pass either absolute or offset kwarg")
+
+        self.extend_memory_if_necessary(p)
+        return self.memory[p]
 
     def write(self, val, absolute=None, offset=None):
         """Writes one value to memory"""
 
         if absolute is not None:
-            self.memory[absolute] = val
+            p = absolute
 
         elif offset is not None:
-            self.memory[self.pos + offset] = val
+            p = self.pos + offset
 
         else:
             raise ValueError("Must pass either absolute or offset kwarg")
+
+        self.extend_memory_if_necessary(p)
+        self.memory[p] = val
+
+    def extend_memory_if_necessary(self, pos):
+        assert (
+            pos < MAX_MEMORY
+        ), f"pos={pos} is too high for max memory setting ({MAX_MEMORY})"
+
+        while pos >= len(self.memory):
+            self.memory.append(0)
 
     def add_input(self, val):
         """Add input val to end of input queue"""

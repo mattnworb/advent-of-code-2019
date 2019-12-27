@@ -1,1 +1,1 @@
-from .computer import Computer, parse_program
+from .computer import Computer, parse_program, RunResult

@@ -139,9 +139,25 @@ class TestProblem06:
 
 class TestProblem09:
     def test_part1_example1(self):
+        """
+        109,1,204,-1,1001,100,1,100,1008,100,16,101,1006,101,0,99 takes no input and produces a copy of itself as output.
+        """
         program = parse_program(
             "109,1,204,-1,1001,100,1,100,1008,100,16,101,1006,101,0,99"
         )
 
         outputs, result = Computer(program, inputs=[], verbose=True).run()
         assert program == outputs
+
+    def test_part1_example2(self):
+        """1102,34915192,34915192,7,4,7,99,0 should output a 16-digit number."""
+        program = parse_program("1102,34915192,34915192,7,4,7,99,0")
+
+        outputs, result = Computer(program, inputs=[], verbose=True).run()
+        assert len(str(outputs[0])) == 16
+
+    def test_part1_example3(self):
+        """104,1125899906842624,99 should output the large number in the middle."""
+        program = parse_program("104,1125899906842624,99")
+        outputs, result = Computer(program, inputs=[], verbose=True).run()
+        assert outputs[0] == 1125899906842624
