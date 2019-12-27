@@ -18,7 +18,7 @@ class TestProblem02:
         for ops, expected in cases:
             c = Computer(ops, inputs=0)
             c.run()
-            assert c.opcodes == expected
+            assert c.memory == expected
 
 
 class TestProblem06:
