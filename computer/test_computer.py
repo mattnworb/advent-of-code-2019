@@ -23,7 +23,7 @@ class TestProblem02:
         ]
 
         for ops, expected in cases:
-            c = Computer(ops, inputs=0, verbose=True)
+            c = Computer(ops, inputs=0)
             c.run()
             assert c.memory == expected
 
@@ -111,20 +111,20 @@ class TestProblem09:
             "109,1,204,-1,1001,100,1,100,1008,100,16,101,1006,101,0,99"
         )
 
-        outputs, result = Computer(program, inputs=[], verbose=True).run()
+        outputs, result = Computer(program, inputs=[]).run()
         assert program == outputs
 
     def test_part1_example2(self):
         """1102,34915192,34915192,7,4,7,99,0 should output a 16-digit number."""
         program = parse_program("1102,34915192,34915192,7,4,7,99,0")
 
-        outputs, result = Computer(program, inputs=[], verbose=True).run()
+        outputs, result = Computer(program, inputs=[]).run()
         assert len(str(outputs[0])) == 16
 
     def test_part1_example3(self):
         """104,1125899906842624,99 should output the large number in the middle."""
         program = parse_program("104,1125899906842624,99")
-        outputs, result = Computer(program, inputs=[], verbose=True).run()
+        outputs, result = Computer(program, inputs=[]).run()
         assert outputs == [1125899906842624]
 
     def test_read_input_relative_param(self):
@@ -144,6 +144,6 @@ class TestProblem09:
             # halt
             + "99"
         )
-        outputs, result = Computer(program, inputs=[2], verbose=True).run()
+        outputs, result = Computer(program, inputs=[2]).run()
         # 2 * 2 = 4
         assert outputs == [4]

@@ -1,4 +1,5 @@
 from enum import Enum, unique
+import logging
 import queue
 
 
@@ -49,7 +50,9 @@ def parse_program(program_string):
 
 
 class Computer(object):
-    def __init__(self, opcodes, inputs, verbose=False):
+    def __init__(self, opcodes, inputs):
+        self.logger = logging.getLogger(__name__)
+
         self.memory = list(opcodes)  # make a copy
         self.pos = 0
 
@@ -66,12 +69,6 @@ class Computer(object):
         self.run_until_block_mode = False
         self.halted = False
 
-        self.verbose = verbose
-
-    def log(self, msg):
-        if self.verbose:
-            print(msg)
-
     def read(self, absolute=None, offset=None):
         """Reads one value from memory"""
 
@@ -86,23 +83,29 @@ class Computer(object):
 
         self.extend_memory_if_necessary(addr)
         value = self.memory[addr]
-        # self.log(f"read: reading address={addr} value={value}")
+        self.logger.debug("read: reading address=%d, value=%d", addr, value)
         return value
 
     def write(self, value, addr):
         """Writes value to memory at address addr"""
         self.extend_memory_if_necessary(addr)
-        # self.log(f"write: writing address={addr} value={value}")
+        self.logger.debug("write: writing address=%d, value=%d", addr, value)
         self.memory[addr] = value
 
     def read_param(self, param_num):
-        """Reads a value from memory based on the given parameter number (one-indexed)."""
+        """
+        Reads a value from memory based on the given parameter number
+        (one-indexed), taking its parameter mode into account.
+        """
         assert param_num > 0
 
         mode = self.param_modes[param_num - 1]
         param_value = self.read(offset=param_num)
-        self.log(
-            f"read_param: param_num={param_num} mode={mode} param_value={param_value}"
+        self.logger.info(
+            "read_param: param_num=%d mode=%s param_value=%d",
+            param_num,
+            mode,
+            param_value,
         )
 
         if mode == ParamMode.POSITION:
@@ -118,13 +121,19 @@ class Computer(object):
             raise ValueError(f"unknown param mode: {mode}")
 
     def write_param(self, param_num, value):
-        """Write a value to memory based on the given parameter number (one-indexed)."""
+        """
+        Write a value to memory based on the given parameter number
+        (one-indexed),taking its parameter mode into account.
+        """
         assert param_num > 0
 
         mode = self.param_modes[param_num - 1]
         param_value = self.read(offset=param_num)
-        self.log(
-            f"write_param: param_num={param_num} mode={mode} param_value={param_value}"
+        self.logger.info(
+            "write_param: param_num=%d mode=%s param_value=%d",
+            param_num,
+            mode,
+            param_value,
         )
 
         if mode == ParamMode.POSITION:
@@ -157,7 +166,7 @@ class Computer(object):
         a = self.read_param(1)
         b = self.read_param(2)
 
-        self.log(f"adding {a} + {b}")
+        self.logger.info(f"adding %d + %d", a, b)
         self.write_param(3, a + b)
 
         self.pos += 4
@@ -167,7 +176,7 @@ class Computer(object):
         a = self.read_param(1)
         b = self.read_param(2)
 
-        self.log(f"mult {a} * {b}")
+        self.logger.info("mult %d * %d", a, b)
         self.write_param(3, a * b)
 
         self.pos += 4
@@ -181,7 +190,7 @@ class Computer(object):
             return True
 
         next_input = self.input_queue.get(block=False)
-        self.log(f"read_input: input is {next_input}")
+        self.logger.info("read_input: input is %d", next_input)
         self.write_param(1, next_input)
 
         self.pos += 2
@@ -191,7 +200,7 @@ class Computer(object):
     # the instruction 4,50 would output the value at address 50.
     def store_output(self):
         val = self.read_param(1)
-        self.log(f"store_output: outputting: {val}")
+        self.logger.info("store_output: outputting: %d", val)
         self.output.append(val)
 
         self.pos += 2
@@ -200,10 +209,10 @@ class Computer(object):
         # if the first parameter is non-zero, it sets the instruction pointer
         # to the value from the second parameter. Otherwise, it does nothing.
         p = self.read_param(1)
-        self.log(f"jump_if_true: testing if {p} is non-zero")
+        self.logger.info("jump_if_true: testing if %d is non-zero", p)
         if p != 0:
             pos = self.read_param(2)
-            self.log(f"jump_if_true: jumping to {pos}")
+            self.logger.info("jump_if_true: jumping to %d", pos)
             self.pos = pos
         else:
             self.pos += 3
@@ -212,10 +221,10 @@ class Computer(object):
         # if the first parameter is zero, it sets the instruction pointer
         # to the value from the second parameter. Otherwise, it does nothing.
         p = self.read_param(1)
-        self.log(f"jump_if_false: testing if {p} is zero")
+        self.logger.info("jump_if_false: testing if %d is zero", p)
         if p == 0:
             pos = self.read_param(2)
-            self.log(f"jump_if_false: jumping to {pos}")
+            self.logger.info("jump_if_false: jumping to %d", pos)
             self.pos = pos
         else:
             self.pos += 3
@@ -227,7 +236,7 @@ class Computer(object):
         b = self.read_param(2)
 
         val = 1 if a < b else 0
-        self.log(f"less_than: testing if {a} < {b}, result={val}")
+        self.logger.info("less_than: testing if %d < %d, result=%d", a, b, val)
         self.write_param(3, val)
 
         self.pos += 4
@@ -239,15 +248,18 @@ class Computer(object):
         b = self.read_param(2)
 
         val = 1 if a == b else 0
-        self.log(f"equal: testing if {a} == {b}, result={val}")
+        self.logger.info("equal: testing if %d == %d, result=%d", a, b, val)
         self.write_param(3, val)
 
         self.pos += 4
 
     def adjust_relative_base(self):
         adjustment = self.read_param(1)
-        self.log(
-            f"adjust_relative_base: relative_base={self.relative_base}, offset={adjustment}, new base={self.relative_base + adjustment}"
+        self.logger.info(
+            "adjust_relative_base: relative_base=%d, offset=%d, new base=%d",
+            self.relative_base,
+            adjustment,
+            self.relative_base + adjustment,
         )
         self.relative_base += adjustment
 
@@ -278,8 +290,12 @@ class Computer(object):
             a *= 10
             b *= 10
 
-        self.log(
-            f"parse_instruction: inst={inst}, storing current_op={opcode} ({OP_NAMES[opcode]}) param_modes={param_modes}"
+        self.logger.info(
+            "parse_instruction: inst=%d, storing current_op=%d (%s) param_modes=%s",
+            inst,
+            opcode,
+            OP_NAMES[opcode],
+            param_modes,
         )
         self.current_op = opcode
         self.param_modes = param_modes
@@ -295,7 +311,7 @@ class Computer(object):
 
         self.run_until_block_mode = until_blocked
 
-        self.log(f"starting program: {self.memory}")
+        self.logger.info("starting program: %s", self.memory)
 
         self.output = []
 
@@ -309,7 +325,8 @@ class Computer(object):
 
     def run_one_iteration(self) -> RunResult:
         """Runs one instruction of the program."""
-        self.log(f"\nrun: at position={self.pos} opcodes={self.memory}")
+        self.logger.info("")
+        self.logger.info("run: at position=%d opcodes=%s", self.pos, self.memory)
 
         self.parse_instruction(self.read(offset=0))
 
@@ -352,7 +369,7 @@ class Computer(object):
             return RunResult.RUNNABLE
 
         elif self.current_op == 99:
-            self.log(f"halt - output: {self.output}")
+            self.logger.info("halt - output: %s", self.memory)
             return RunResult.HALTED
 
         else:

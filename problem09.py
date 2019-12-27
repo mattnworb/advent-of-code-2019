@@ -14,7 +14,7 @@ if __name__ == "__main__":
 
     program = computer.parse_program(inp)
 
-    c = computer.Computer(program, inputs=1, verbose=False)
+    c = computer.Computer(program, inputs=1)
     outputs, result = c.run()
 
     assert result == computer.RunResult.HALTED
@@ -32,7 +32,7 @@ if __name__ == "__main__":
     #
     # Run the BOOST program in sensor boost mode. What are the coordinates of the
     # distress signal?
-    c = computer.Computer(program, inputs=2, verbose=False)
+    c = computer.Computer(program, inputs=2)
     outputs, result = c.run()
 
     assert result == computer.RunResult.HALTED
