@@ -18,6 +18,7 @@ NUM_PARAMS = {
     6: 2,  # jump-if-false
     7: 3,  # less-than
     8: 3,  # equals
+    9: 1,  # adject relative base
     99: 0,  # halt
 }
 
@@ -30,8 +31,13 @@ OP_NAMES = {
     6: "JUMP_IF_FALSE",
     7: "LESS_THAN",
     8: "EQUALS",
+    9: "ADJUST_RELATIVE_BASE",
     99: "HALT",
 }
+
+
+def parse_program(program_string):
+    return list(map(int, program_string.split(",")))
 
 
 class Computer(object):
@@ -48,6 +54,7 @@ class Computer(object):
 
         self.current_op = None
         self.param_modes = []
+        self.relative_base = 0
         self.run_until_block_mode = False
         self.halted = False
 
@@ -176,6 +183,13 @@ class Computer(object):
 
         self.pos += 4
 
+    def adjust_relative_base(self):
+        param = self.read_value(0, self.opcodes[self.pos + 1])
+        self.relative_base += param
+        self.log(f"adjust_relative_base: new base is {self.relative_base}")
+
+        self.pos += 2
+
     def parse_instruction(self, inst):
         """
         Parameter modes are stored in the same value as the instruction's opcode.
@@ -208,22 +222,41 @@ class Computer(object):
 
     def read_value(self, param_num, val):
         """
-        Right now, your ship computer already understands parameter mode 0, position mode, 
-        which causes the parameter to be interpreted as a position - if the parameter is 
-        50, its value is the value stored at address 50 in memory. Until now, all 
-        parameters have been in position mode.
+        Right now, your ship computer already understands parameter mode 0,
+        position mode, which causes the parameter to be interpreted as a
+        position - if the parameter is 50, its value is the value stored at
+        address 50 in memory. Until now, all parameters have been in position
+        mode.
 
-        Now, your ship computer will also need to handle parameters in mode 1, 
-        immediate mode. In immediate mode, a parameter is interpreted as a value 
-        - if the parameter is 50, its value is simply 50.
+        Now, your ship computer will also need to handle parameters in mode 1,
+        immediate mode. In immediate mode, a parameter is interpreted as a
+        value: if the parameter is 50, its value is simply 50.
+
+        Parameters in mode 2, relative mode, behave very similarly to parameters
+        in position mode: the parameter is interpreted as a position. Like
+        position mode, parameters in relative mode can be read from or written
+        to.
+
+        The important difference is that relative mode parameters don't count
+        from address 0. Instead, they count from a value called the relative
+        base. The relative base starts at 0.
         """
         mode = self.param_modes[param_num]
+
         if mode == 0:
             self.log(f"read_value: param_num={param_num} param={val} = position mode")
             return self.opcodes[val]
+
         elif mode == 1:
             self.log(f"read_value: param_num={param_num} param={val} = immediate mode")
             return val
+
+        elif mode == 2:
+            self.log(
+                f"read_value: param_num={param_num} param={val} relative_base={self.relative_base} = relative mode"
+            )
+            dst = self.relative_base + val
+            return self.opcodes[dst]
 
         raise ValueError(f"unknown param mode: {mode}")
 
@@ -288,6 +321,10 @@ class Computer(object):
 
         elif self.current_op == 8:
             self.equal()
+            return RunResult.RUNNABLE
+
+        elif self.current_op == 9:
+            self.adjust_relative_base()
             return RunResult.RUNNABLE
 
         elif self.current_op == 99:

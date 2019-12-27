@@ -65,7 +65,3 @@ def run_amplifiers(count, phase_settings, opcodes, feedback_mode=False):
             output_from_last = output[0]
 
         return output_from_last
-
-
-def parse_program(program_string):
-    return list(map(int, program_string.split(",")))

@@ -1,1 +1,1 @@
-from .computer import Computer
+from .computer import Computer, parse_program

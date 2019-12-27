@@ -1,4 +1,5 @@
-from .main import find_max_thruster, parse_program
+from .main import find_max_thruster
+from computer import parse_program
 
 
 class TestPart1:

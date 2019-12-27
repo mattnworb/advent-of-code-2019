@@ -1,4 +1,4 @@
-from .computer import Computer, RunResult
+from .computer import Computer, RunResult, parse_program
 
 
 class TestProblem02:
@@ -135,3 +135,13 @@ class TestProblem06:
 
         # output 1001 if the input value is greater than 8.
         assert [1001], RunResult.HALTED == Computer(opcodes, inputs=10).run()
+
+
+class TestProblem09:
+    def test_part1_example1(self):
+        program = parse_program(
+            "109,1,204,-1,1001,100,1,100,1008,100,16,101,1006,101,0,99"
+        )
+
+        outputs, result = Computer(program, inputs=[], verbose=True).run()
+        assert program == outputs
