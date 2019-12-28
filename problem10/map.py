@@ -1,4 +1,5 @@
 from __future__ import annotations
+from math import atan2
 
 
 def slope(a, b):
@@ -24,6 +25,19 @@ def add(a, b):
     return a[0] + b[0], a[1] + b[1]
 
 
+def sort_asteroids_clockwise(monitoring_station, asteroids: set) -> list:
+    asteroids_by_slope = {slope(monitoring_station, a): a for a in asteroids}
+    # sort the keys.
+    #
+    # I don't entirely understand why atan2 with x and y swapped works, to sort
+    # clockwise from the positive y-axis, but when playing around in a REPL this
+    # gives the right answer.
+    sorted_slopes = sorted(
+        asteroids_by_slope, key=lambda pos: atan2(pos[0], pos[1]), reverse=True
+    )
+    return list(asteroids_by_slope[s] for s in sorted_slopes)
+
+
 class AsteroidMap:
     @staticmethod
     def parse(map_str: str):
@@ -47,6 +61,9 @@ class AsteroidMap:
         self.asteroids = frozenset(asteroids)
         self.num_x = num_x
         self.num_y = num_y
+
+    def __repr__(self):
+        return f"asteroids={self.asteroids}, num_x={self.num_x}, num_y={self.num_y}"
 
     def num_asteroids(self):
         """Returns the number of asteroids in the map."""
@@ -76,16 +93,15 @@ class AsteroidMap:
         Count how many asteroids are in line of sight from the given asteroid
         (with position (x,y)).
         """
-        count = 0
+        return len(self.asteroids_in_line_of_sight(asteroid))
 
-        for other in self.asteroid_positions():
-            if other == asteroid:
-                continue
-
-            if self.is_in_line_of_sight(asteroid, other):
-                count += 1
-
-        return count
+    def asteroids_in_line_of_sight(self, asteroid) -> set:
+        """Return the set of asteroids in line of sight of the given asteroid."""
+        return {
+            other
+            for other in self.asteroid_positions()
+            if other != asteroid and self.is_in_line_of_sight(asteroid, other)
+        }
 
     def in_bounds(self, pos) -> bool:
         """Test if position pos is in bounds of the map."""

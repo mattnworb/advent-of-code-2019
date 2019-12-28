@@ -1,4 +1,4 @@
-from .map import AsteroidMap, slope
+from .map import AsteroidMap, slope, sort_asteroids_clockwise
 import pytest
 
 map1 = """
@@ -174,3 +174,48 @@ def test_slope():
 
     # order swapped should have negative slope
     assert slope((4, 0), (1, 0)) == (-1, 0)
+
+
+def test_sort_asteroids_clockwise():
+    m = AsteroidMap.parse(
+        """
+        .#....#####...#..
+        ##...##.#####..##
+        ##...#...#.#####.
+        ..#.....#...###..
+        ..#.#.....#....##
+    """
+    )
+
+    # The first nine asteroids to get vaporized, in order, would be:
+    #
+    # .#....###24...#..
+    # ##...##.13#67..9#
+    # ##...#...5.8####.
+    # ..#.....X...###..
+    # ..#.#.....#....##
+
+    monitoring_station = (8, 3)
+    assert m.find_best_monitoring_station()[0] == monitoring_station
+
+    first_nine = [
+        (8, 1),
+        (9, 0),
+        (9, 1),
+        (10, 0),
+        (9, 2),
+        (11, 1),
+        (12, 1),
+        (11, 2),
+        (15, 1),
+    ]
+
+    # sanity check - `<`` is subset
+    assert set(first_nine) < set(m.asteroid_positions())
+    assert set(first_nine) < m.asteroids_in_line_of_sight(monitoring_station)
+
+    sort_result = sort_asteroids_clockwise(
+        monitoring_station, m.asteroids_in_line_of_sight(monitoring_station)
+    )
+    print(sort_result)
+    assert first_nine == sort_result[:9]
