@@ -147,6 +147,18 @@ class TestAsteroidMap:
         assert m2 != m1
         assert not m1 == m2
 
+    def test_remove_asteroids(self):
+        m = AsteroidMap.parse(
+            """
+        ..#
+        .#.
+        """
+        )
+
+        new_map = m.remove_asteroids({(2, 0)})
+        assert new_map != m
+        assert {(1, 1)} == set(new_map.asteroid_positions())
+
 
 def test_slope():
     assert slope((1, 2), (3, 3)) == (2, 1)

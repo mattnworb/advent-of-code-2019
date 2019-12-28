@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+
 def slope(a, b):
     """
     Returns the slope between the two points, minimized to the smallest values.
@@ -109,3 +112,7 @@ class AsteroidMap:
                 return False
 
             candidate = add(candidate, s)
+
+    def remove_asteroids(self, asteroids_to_remove: set) -> AsteroidMap:
+        """Return a new AsteroidMap with the given asteroids removed from this map."""
+        return AsteroidMap(self.asteroids - asteroids_to_remove, self.num_x, self.num_y)
