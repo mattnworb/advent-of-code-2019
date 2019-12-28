@@ -67,12 +67,14 @@ class AsteroidMap:
     def find_best_monitoring_station(self):
         best_asteroid = None
         highest_count = 0
+
         for asteroid in self.asteroid_positions():
             count = self.count_line_of_sight(asteroid)
             if count > highest_count:
                 highest_count = count
                 best_asteroid = asteroid
-        return best_asteroid
+
+        return best_asteroid, highest_count
 
     def count_line_of_sight(self, asteroid):
         """Count how many asteroids are in line of sight from the given asteroid (with position (x,y))."""

@@ -126,18 +126,18 @@ class TestAsteroidMap:
         assert 7 == m1.count_line_of_sight((4, 0))
 
     @pytest.mark.parametrize(
-        "test_map,expected",
+        "test_map,coord,count",
         [
-            (map1, (3, 4)),
-            (map2, (5, 8)),
-            (map3, (1, 2)),
-            (map4, (6, 3)),
-            (map5, (11, 13)),
+            (map1, (3, 4), 8),
+            (map2, (5, 8), 33),
+            (map3, (1, 2), 35),
+            (map4, (6, 3), 41),
+            (map5, (11, 13), 210),
         ],
     )
-    def test_find_best_monitoring_station(self, test_map, expected):
+    def test_find_best_monitoring_station(self, test_map, coord, count):
         m = AsteroidMap.parse(test_map)
-        assert expected == m.find_best_monitoring_station()
+        assert (coord, count) == m.find_best_monitoring_station()
 
 
 def test_slope():
