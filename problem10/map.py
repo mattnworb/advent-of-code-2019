@@ -1,11 +1,3 @@
-def _map(ch):
-    if ch == "#":
-        return 1
-    elif ch == ".":
-        return 0
-    raise ValueError()
-
-
 def slope(a, b):
     """
     Returns the slope between the two points, minimized to the smallest values.
@@ -25,44 +17,44 @@ def gcd(a, b):
 
 
 def add(a, b):
+    """Add two (x,y ) positions together"""
     return a[0] + b[0], a[1] + b[1]
 
 
 class AsteroidMap:
     @staticmethod
     def parse(map_str: str):
-        p = []
-        for line in map_str.strip().split("\n"):
-            chars = list(line.strip())
-            r = list(map(_map, chars))
-            p.append(r)
-        return AsteroidMap(p)
+        lines = [line.strip() for line in map_str.strip().split("\n")]
 
-    def __init__(self, positions):
-        # test that the two dimensional array has the same length in each row
-        assert len(set([len(row) for row in positions])) == 1
-        self.positions = positions
-        self.num_x = len(positions[0])
-        self.num_y = len(positions)
+        asteroids = set()
+
+        for y, line in enumerate(lines):
+            # test that the two dimensional array has the same length in each row
+            assert len(line) == len(lines[0])
+            for x, ch in enumerate(line):
+                if ch == "#":
+                    asteroids.add((x, y))
+
+        num_x = len(lines[0])
+        num_y = len(lines)
+
+        return AsteroidMap(asteroids, num_x, num_y)
+
+    def __init__(self, asteroids, num_x, num_y):
+        self.asteroids = frozenset(asteroids)
+        self.num_x = num_x
+        self.num_y = num_y
 
     def num_asteroids(self):
         """Returns the number of asteroids in the map."""
-        count = 0
-        for row in self.positions:
-            count += sum(row)
-        return count
+        return len(self.asteroids)
 
     def asteroid_positions(self):
         """Return an iterator whose values are the (x, y) positions of each asteroid."""
-        for y, row in enumerate(self.positions):
-            for x, pos in enumerate(row):
-                if pos == 1:
-                    yield (x, y)
+        return iter(self.asteroids)
 
     def is_asteroid(self, pos):
-        x, y = pos
-        # these are reversed
-        return self.positions[y][x] == 1
+        return pos in self.asteroids
 
     def find_best_monitoring_station(self):
         best_asteroid = None
@@ -77,7 +69,10 @@ class AsteroidMap:
         return best_asteroid, highest_count
 
     def count_line_of_sight(self, asteroid):
-        """Count how many asteroids are in line of sight from the given asteroid (with position (x,y))."""
+        """
+        Count how many asteroids are in line of sight from the given asteroid
+        (with position (x,y)).
+        """
         count = 0
 
         for other in self.asteroid_positions():
@@ -90,7 +85,7 @@ class AsteroidMap:
         return count
 
     def in_bounds(self, pos) -> bool:
-        """Test if position pos is in the map."""
+        """Test if position pos is in bounds of the map."""
         return (
             pos[0] >= 0 and pos[0] < self.num_x and pos[1] >= 0 and pos[1] < self.num_y
         )

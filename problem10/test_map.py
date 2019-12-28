@@ -139,6 +139,14 @@ class TestAsteroidMap:
         m = AsteroidMap.parse(test_map)
         assert (coord, count) == m.find_best_monitoring_station()
 
+    def test_equals(self):
+        m1 = AsteroidMap.parse(map1)
+        m2 = AsteroidMap.parse(map2)
+        assert m1 == m1
+        assert m1 != m2
+        assert m2 != m1
+        assert not m1 == m2
+
 
 def test_slope():
     assert slope((1, 2), (3, 3)) == (2, 1)
