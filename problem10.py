@@ -1,4 +1,4 @@
-from problem10 import AsteroidMap
+from problem10.map import AsteroidMap
 
 if __name__ == "__main__":
     with open("problem10/input") as f:

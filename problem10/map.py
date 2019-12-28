@@ -113,6 +113,9 @@ class AsteroidMap:
 
             candidate = add(candidate, s)
 
+        # failed out of bounds check above
+        return False
+
     def remove_asteroids(self, asteroids_to_remove: set) -> AsteroidMap:
         """Return a new AsteroidMap with the given asteroids removed from this map."""
         return AsteroidMap(self.asteroids - asteroids_to_remove, self.num_x, self.num_y)
