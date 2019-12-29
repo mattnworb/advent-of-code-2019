@@ -25,11 +25,15 @@ TURN_RIGHT = 1
 
 
 class HullPaintingRobot:
-    def __init__(self, program):
+    def __init__(self, program, starting_color=PAINT_BLACK):
         self.direction = Direction.UP
-        self.panel_colors = {}
-        self.painted_panels = set()
         self.current_pos = (0, 0)
+        self.panel_colors = {self.current_pos: starting_color}
+        # set of panels which has been painted. We could also count
+        # self.panel_colors.keys(), but we'd have to keep track if (0,0) was in
+        # that dict because we were keeping track of the starting color, OR if
+        # it was painted.
+        self.painted_panels = set()
         self.computer = computer.Computer(program, inputs=[])
 
     def run(self):
@@ -78,3 +82,23 @@ class HullPaintingRobot:
 
         elif self.direction == Direction.LEFT:
             self.current_pos = (self.current_pos[0] - 1, self.current_pos[1])
+
+    def bounding_box(self):
+        min_x, max_x, min_y, max_y = None, None, None, None
+
+        for panel in self.painted_panels:
+            x, y = panel
+
+            if min_x is None or x < min_x:
+                min_x = x
+
+            if max_x is None or x > max_x:
+                max_x = x
+
+            if min_y is None or y < min_y:
+                min_y = y
+
+            if max_y is None or y > max_y:
+                max_y = y
+
+        return (min_x, max_x, min_y, max_y)
