@@ -132,6 +132,25 @@ class AsteroidMap:
         # failed out of bounds check above
         return False
 
-    def remove_asteroids(self, asteroids_to_remove: set) -> AsteroidMap:
+    def remove_asteroids(self, asteroids_to_remove) -> AsteroidMap:
         """Return a new AsteroidMap with the given asteroids removed from this map."""
-        return AsteroidMap(self.asteroids - asteroids_to_remove, self.num_x, self.num_y)
+        return AsteroidMap(
+            self.asteroids - set(asteroids_to_remove), self.num_x, self.num_y
+        )
+
+
+def vaporize_order(asteroid_map):
+    monitoring_station, _ = asteroid_map.find_best_monitoring_station()
+
+    map_copy = asteroid_map
+    vaporized = []
+
+    while map_copy.num_asteroids() > 1:
+        to_be_vaporized = sort_asteroids_clockwise(
+            monitoring_station, map_copy.asteroids_in_line_of_sight(monitoring_station)
+        )
+
+        vaporized.extend(to_be_vaporized)
+        map_copy = map_copy.remove_asteroids(to_be_vaporized)
+
+    return vaporized

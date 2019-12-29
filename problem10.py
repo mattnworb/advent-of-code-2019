@@ -1,12 +1,14 @@
-from problem10.map import AsteroidMap
+import problem10.map
 
 if __name__ == "__main__":
     with open("problem10/input") as f:
         inp = f.read(-1).strip()
 
-    m = AsteroidMap.parse(inp)
+    m = problem10.map.AsteroidMap.parse(inp)
     print("Part 1")
-    print(m.find_best_monitoring_station())
+
+    monitoring_station, count = m.find_best_monitoring_station()
+    print("Monitoring station:", monitoring_station)
 
     # Part 2:
     #
@@ -27,14 +29,7 @@ if __name__ == "__main__":
     # you get if you multiply its X coordinate by 100 and then add its Y
     # coordinate? (For example, 8,2 becomes 802.)
 
-    # ideas for solution:
-    # - from the monitoring station, we know all the asteroids in line of sight.
-    # - line of sight is the same thing as the ones that would be vaporized in
-    #   the first round.
-    # - need to be able to sort a list of asteroids so that they are in
-    #   clockwise order
-    # - create a list of asteroids to be vaporized
-    #   - add the asteroids in line-of-sight, after ordering, to this list
-    #   - make a new map, removing these asteroids
-    #   - re-do the line of sight calculations, repeating the above steps
-    #   - repeat until all asteroids are toast
+    vaporized = problem10.map.vaporize_order(m)
+
+    print("Round 2")
+    print(f"200th vaporized asteroid: {vaporized[199]}")

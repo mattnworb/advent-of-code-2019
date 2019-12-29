@@ -1,4 +1,4 @@
-from .map import AsteroidMap, slope, sort_asteroids_clockwise
+from .map import AsteroidMap, slope, sort_asteroids_clockwise, vaporize_order
 import pytest
 
 map1 = """
@@ -158,6 +158,35 @@ class TestAsteroidMap:
         new_map = m.remove_asteroids({(2, 0)})
         assert new_map != m
         assert {(1, 1)} == set(new_map.asteroid_positions())
+
+    def test_vaporize_order(self):
+        # In the large example above (the one with the best monitoring station location at 11,13):
+        #
+        # - The 1st asteroid to be vaporized is at 11,12.
+        # - The 2nd asteroid to be vaporized is at 12,1.
+        # - The 3rd asteroid to be vaporized is at 12,2.
+        # - The 10th asteroid to be vaporized is at 12,8.
+        # - The 20th asteroid to be vaporized is at 16,0.
+        # - The 50th asteroid to be vaporized is at 16,9.
+        # - The 100th asteroid to be vaporized is at 10,16.
+        # - The 199th asteroid to be vaporized is at 9,6.
+        # - The 200th asteroid to be vaporized is at 8,2.
+        # - The 201st asteroid to be vaporized is at 10,9.
+        # - The 299th and final asteroid to be vaporized is at 11,1.
+        m = AsteroidMap.parse(map5)
+        vaporized = vaporize_order(m)
+
+        assert vaporized[0] == (11, 12)
+        assert vaporized[1] == (12, 1)
+        assert vaporized[2] == (12, 2)
+        assert vaporized[9] == (12, 8)
+        assert vaporized[19] == (16, 0)
+        assert vaporized[49] == (16, 9)
+        assert vaporized[99] == (10, 16)
+        assert vaporized[198] == (9, 6)
+        assert vaporized[199] == (8, 2)
+        assert vaporized[200] == (10, 9)
+        assert vaporized[298] == (11, 1)
 
 
 def test_slope():
