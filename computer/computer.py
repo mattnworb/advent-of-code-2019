@@ -51,18 +51,21 @@ def parse_program(program_string):
 
 
 class Computer(object):
-    def __init__(self, opcodes, inputs):
+    def __init__(self, opcodes, inputs=None, max_memory_length=MAX_MEMORY):
         self.logger = logging.getLogger(__name__)
 
         self.memory = list(opcodes)  # make a copy
         self.pos = 0
 
         self.input_queue: queue.Queue = queue.Queue()
-        if isinstance(inputs, int):
-            self.add_input(inputs)
-        else:
-            for i in inputs:
-                self.add_input(i)
+        if inputs:
+            if isinstance(inputs, int):
+                self.add_input(inputs)
+            else:
+                for i in inputs:
+                    self.add_input(i)
+
+        self.max_memory_length = max_memory_length
 
         self.current_op = None
         self.param_modes = []
@@ -152,8 +155,8 @@ class Computer(object):
 
     def extend_memory_if_necessary(self, pos):
         assert (
-            pos < MAX_MEMORY
-        ), f"pos={pos} is too high, max memory setting ({MAX_MEMORY})"
+            pos < self.max_memory_length
+        ), f"pos={pos} is too high, max memory setting ({self.max_memory_length})"
 
         while pos >= len(self.memory):
             self.memory.append(0)
