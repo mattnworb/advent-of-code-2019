@@ -1,4 +1,5 @@
 from enum import Enum, unique
+from typing import List
 import logging
 import queue
 
@@ -56,7 +57,7 @@ class Computer(object):
         self.memory = list(opcodes)  # make a copy
         self.pos = 0
 
-        self.input_queue = queue.Queue()
+        self.input_queue: queue.Queue = queue.Queue()
         if isinstance(inputs, int):
             self.add_input(inputs)
         else:
@@ -313,7 +314,7 @@ class Computer(object):
 
         self.logger.info("starting program: %s", self.memory)
 
-        self.output = []
+        self.output: List[int] = []
 
         while self.pos < len(self.memory):
             result = self.run_one_iteration()

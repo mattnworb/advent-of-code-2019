@@ -36,7 +36,6 @@ def run_amplifiers(count, phase_settings, opcodes, feedback_mode=False):
             computers.append(c)
 
         # then run them
-        last_output = None
         while True:
             for ix, c in enumerate(computers):
                 outputs, result = c.run(until_blocked=True)
@@ -49,6 +48,7 @@ def run_amplifiers(count, phase_settings, opcodes, feedback_mode=False):
                 last_output = outputs
 
             if all((c.halted for c in computers)):
+                last_output = computers[-1].output
                 assert len(last_output) == 1
                 return last_output[0]
     else:

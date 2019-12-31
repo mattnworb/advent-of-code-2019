@@ -1,3 +1,6 @@
+from typing import List
+
+
 class Image:
     @staticmethod
     def parse_image(image_str, width, height):
@@ -7,9 +10,8 @@ class Image:
 
         num_layers = len(image_str) // (width * height)
 
-        layers = []
+        layers: List[List[List[int]]] = []
 
-        # for ix, pixel in enumerate(image_str):
         ix = 0
         for l in range(num_layers):
             layers.append([])

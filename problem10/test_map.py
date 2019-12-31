@@ -1,5 +1,5 @@
 from .map import AsteroidMap, slope, sort_asteroids_clockwise, vaporize_order
-import pytest
+import pytest  # type: ignore
 
 map1 = """
 .#..#
