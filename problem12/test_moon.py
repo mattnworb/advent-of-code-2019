@@ -135,3 +135,15 @@ def test_total_energy_in_system():
 def test_total_energy_in_system2():
     moons = moon.run_simulation(EXAMPLE_2_MOONS, 100)
     assert 1940 == moon.total_energy_in_system(moons)
+
+
+def test_steps_until_repeat():
+    assert 2772 == moon.steps_until_repeat(EXAMPLE_1_MOONS)
+
+
+def test_steps_until_repeat_slow():
+    assert 4686774924 == moon.steps_until_repeat(EXAMPLE_2_MOONS)
+
+
+def test_lcm():
+    assert 12 == moon.lcm(4, 6)

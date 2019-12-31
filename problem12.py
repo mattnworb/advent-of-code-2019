@@ -17,3 +17,11 @@ if __name__ == "__main__":
     # your scan for 1000 steps?
     print("Part 1")
     print(moon.total_energy_in_system(moon.run_simulation(inp, 1000)))
+
+    # for benchmarking:
+    # rounds = 1_000_000
+    # moon.run_simulation(inp, rounds)
+    # print(rounds, 'done')
+
+    print("Part 2")
+    print(moon.steps_until_repeat(inp, max_search_rounds=1_000_000))

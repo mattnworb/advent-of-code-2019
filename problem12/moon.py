@@ -1,6 +1,8 @@
-from typing import Tuple, List, Iterable
+from typing import Tuple, List, Iterable, Set, Optional
 from itertools import combinations
 import logging
+
+from problem10.map import gcd
 
 logger = logging.getLogger(__name__)
 
@@ -71,7 +73,7 @@ def apply_gravity(moons: List[Moon]):
 
     for m1, m2 in combinations(moons, 2):
 
-        for axis in [0, 1, 2]:
+        for axis in range(3):
             if m1.position[axis] < m2.position[axis]:
                 m1.velocity[axis] += 1
                 m2.velocity[axis] -= 1
@@ -82,3 +84,50 @@ def apply_gravity(moons: List[Moon]):
 
 def total_energy_in_system(moons: List[Moon]) -> int:
     return sum(m.total_energy() for m in moons)
+
+
+def _hash(moons, axis):
+    k = []
+    for moon in moons:
+        k.append(moon.position[axis])
+    for moon in moons:
+        k.append(moon.velocity[axis])
+    return tuple(k)
+
+
+def steps_until_repeat(moons, max_search_rounds=10000):
+    moons = _copy_moons(moons)
+
+    history: List[Set[Tuple[int]]] = [set(), set(), set()]
+    names = ["X", "Y", "Z"]
+    cycle_length: List[Optional[int]] = [None, None, None]
+
+    for axis in range(3):
+        history[axis].add(_hash(moons, axis))
+
+    for round in range(1, max_search_rounds):
+        moons = run_simulation(moons, 1)
+        for axis in range(3):
+            k = _hash(moons, axis)
+            if k in history[axis] and cycle_length[axis] is None:
+                cycle_length[axis] = round
+                logger.info(
+                    "found cycle in %s after %d rounds", names[axis], cycle_length[axis]
+                )
+
+            elif cycle_length[axis] is None:
+                history[axis].add(k)
+
+        if all(c is not None for c in cycle_length):
+            break
+
+    assert all(
+        c is not None for c in cycle_length
+    ), f"Did not find cycles after {max_search_rounds} rounds"
+
+    # LCM of 3 numbers is lcm(lcm(a, b), c)
+    return int(lcm(lcm(cycle_length[0], cycle_length[1]), cycle_length[2]))
+
+
+def lcm(a, b):
+    return abs(a * b) / gcd(a, b)
