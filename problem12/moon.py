@@ -46,7 +46,7 @@ def run_simulation(moons: List[Moon], rounds: int) -> List[Moon]:
     # positions are updated.
 
     for round in range(rounds):
-        moons = apply_gravity(moons)
+        apply_gravity(moons)
         logger.debug("Round=%d after gravity, moons=%s", round, moons)
 
         # Once all gravity has been applied, apply velocity: simply add the
@@ -60,7 +60,7 @@ def run_simulation(moons: List[Moon], rounds: int) -> List[Moon]:
     return moons
 
 
-def apply_gravity(moons: List[Moon]) -> List[Moon]:
+def apply_gravity(moons: List[Moon]):
     # To apply gravity, consider every pair of moons. On each axis (x, y, and
     # z), the velocity of each moon changes by exactly +1 or -1 to pull the
     # moons together. For example, if Ganymede has an x position of 3, and
@@ -69,9 +69,7 @@ def apply_gravity(moons: List[Moon]) -> List[Moon]:
     # However, if the positions on a given axis are the same, the velocity on
     # that axis does not change for that pair of moons.
 
-    new_moons = [Moon(m.position, m.velocity) for m in moons]
-
-    for m1, m2 in combinations(new_moons, 2):
+    for m1, m2 in combinations(moons, 2):
 
         for axis in [0, 1, 2]:
             if m1.position[axis] < m2.position[axis]:
@@ -80,7 +78,6 @@ def apply_gravity(moons: List[Moon]) -> List[Moon]:
             elif m1.position[axis] > m2.position[axis]:
                 m1.velocity[axis] -= 1
                 m2.velocity[axis] += 1
-    return new_moons
 
 
 def total_energy_in_system(moons: List[Moon]) -> int:

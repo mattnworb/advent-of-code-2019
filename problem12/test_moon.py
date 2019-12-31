@@ -43,20 +43,20 @@ def test_apply_gravity():
     # position of 5, then Ganymede's x velocity changes by +1 (because 5 > 3)
     # and Callisto's x velocity changes by -1 (because 3 < 5).
     moons = [moon.Moon((3, 3, 3)), moon.Moon((5, 5, 5))]
-    after = moon.apply_gravity(moons)
-    assert len(after) == len(moons)
-    assert after[0].velocity == [1, 1, 1]
-    assert after[1].velocity == [-1, -1, -1]
+    moon.apply_gravity(moons)
+
+    assert moons[0].velocity == [1, 1, 1]
+    assert moons[1].velocity == [-1, -1, -1]
 
 
 def test_apply_gravity_same_position():
     # However, if the positions on a given axis are the same, the velocity on
     # that axis does not change for that pair of moons.
     moons = [moon.Moon((5, 5, 5)), moon.Moon((5, 5, 5))]
-    after = moon.apply_gravity(moons)
-    assert len(after) == len(moons)
-    assert after[0].velocity == [0, 0, 0]
-    assert after[1].velocity == [0, 0, 0]
+    moon.apply_gravity(moons)
+
+    assert moons[0].velocity == [0, 0, 0]
+    assert moons[1].velocity == [0, 0, 0]
 
 
 EXAMPLE_1_MOONS = [
@@ -110,7 +110,10 @@ EXAMPLE_2_MOONS = [
     ],
 )
 def test_run_simulation(num_rounds, input_moons, expected_moons):
-    actual = moon.run_simulation(list(input_moons), num_rounds)
+    # don't modify original list/instances
+    input_copy = [moon.Moon(m.position, m.velocity) for m in input_moons]
+
+    actual = moon.run_simulation(input_copy, num_rounds)
     assert len(actual) == len(input_moons)
 
     for n, expected in enumerate(expected_moons):
