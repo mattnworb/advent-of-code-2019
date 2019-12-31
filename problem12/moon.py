@@ -4,20 +4,18 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-Tuple3 = Tuple[int, int, int]
-
 
 class Moon:
-    def __init__(self, position: Tuple3, velocity=(0, 0, 0)):
-        self.position = position
-        self.velocity = velocity
+    def __init__(self, position: Iterable[int], velocity=[0, 0, 0]):
+        self.position = list(position)
+        self.velocity = list(velocity)
 
     def __repr__(self):
         return f"pos=<{self.position}>, vel=<{self.velocity}>"
 
     def add_velocity_to_position(self):
         for axis in [0, 1, 2]:
-            self.position = _add(self.position, axis, self.velocity[axis])
+            self.position[axis] += self.velocity[axis]
 
     def total_energy(self):
         # The total energy for a single moon is its potential energy multiplied
@@ -32,17 +30,6 @@ class Moon:
 
     def kinetic_energy(self):
         return sum(abs(v) for v in self.velocity)
-
-
-def _add(t: Tuple3, axis: int, val: int) -> Tuple3:
-    """Adds one to the value in the given position and returns new tuple"""
-    if axis == 0:
-        return t[0] + val, t[1], t[2]
-    if axis == 1:
-        return t[0], t[1] + val, t[2]
-    if axis == 2:
-        return t[0], t[1], t[2] + val
-    raise ValueError()
 
 
 def _copy_moons(moons):
@@ -88,11 +75,11 @@ def apply_gravity(moons: List[Moon]) -> List[Moon]:
 
         for axis in [0, 1, 2]:
             if m1.position[axis] < m2.position[axis]:
-                m1.velocity = _add(m1.velocity, axis, 1)
-                m2.velocity = _add(m2.velocity, axis, -1)
+                m1.velocity[axis] += 1
+                m2.velocity[axis] -= 1
             elif m1.position[axis] > m2.position[axis]:
-                m1.velocity = _add(m1.velocity, axis, -1)
-                m2.velocity = _add(m2.velocity, axis, 1)
+                m1.velocity[axis] -= 1
+                m2.velocity[axis] += 1
     return new_moons
 
 

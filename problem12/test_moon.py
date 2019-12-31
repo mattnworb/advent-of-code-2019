@@ -11,12 +11,12 @@ import problem12.moon as moon
 class TestMoon:
     def test_velocity_defaults_to_zero(self):
         m = moon.Moon((1, 1, 1))
-        assert m.velocity == (0, 0, 0)
+        assert m.velocity == [0, 0, 0]
 
     def test_add_velocity_to_position(self):
         m = moon.Moon((1, 2, 3), (-1, 4, 10))
         m.add_velocity_to_position()
-        assert m.position == (0, 6, 13)
+        assert m.position == [0, 6, 13]
 
 
 def test_run_simulation_zero_rounds():
@@ -28,14 +28,14 @@ def test_run_simulation_zero_rounds():
     ]
 
     moon.run_simulation(moons, 0)
-    assert moons[0].velocity == (0, 0, 0)
-    assert moons[1].velocity == (0, 0, 0)
-    assert moons[2].velocity == (0, 0, 0)
-    assert moons[3].velocity == (0, 0, 0)
-    assert moons[0].position == (-1, 0, 2)
-    assert moons[1].position == (2, -10, -7)
-    assert moons[2].position == (4, -8, 8)
-    assert moons[3].position == (3, 5, -1)
+    assert moons[0].velocity == [0, 0, 0]
+    assert moons[1].velocity == [0, 0, 0]
+    assert moons[2].velocity == [0, 0, 0]
+    assert moons[3].velocity == [0, 0, 0]
+    assert moons[0].position == [-1, 0, 2]
+    assert moons[1].position == [2, -10, -7]
+    assert moons[2].position == [4, -8, 8]
+    assert moons[3].position == [3, 5, -1]
 
 
 def test_apply_gravity():
@@ -45,8 +45,8 @@ def test_apply_gravity():
     moons = [moon.Moon((3, 3, 3)), moon.Moon((5, 5, 5))]
     after = moon.apply_gravity(moons)
     assert len(after) == len(moons)
-    assert after[0].velocity == (1, 1, 1)
-    assert after[1].velocity == (-1, -1, -1)
+    assert after[0].velocity == [1, 1, 1]
+    assert after[1].velocity == [-1, -1, -1]
 
 
 def test_apply_gravity_same_position():
@@ -55,8 +55,8 @@ def test_apply_gravity_same_position():
     moons = [moon.Moon((5, 5, 5)), moon.Moon((5, 5, 5))]
     after = moon.apply_gravity(moons)
     assert len(after) == len(moons)
-    assert after[0].velocity == (0, 0, 0)
-    assert after[1].velocity == (0, 0, 0)
+    assert after[0].velocity == [0, 0, 0]
+    assert after[1].velocity == [0, 0, 0]
 
 
 EXAMPLE_1_MOONS = [
