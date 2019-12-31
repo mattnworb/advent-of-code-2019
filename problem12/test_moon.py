@@ -1,4 +1,3 @@
-from collections import namedtuple
 import logging
 from sys import stdout
 
@@ -18,15 +17,6 @@ class TestMoon:
         m = moon.Moon((1, 2, 3), (-1, 4, 10))
         m.add_velocity_to_position()
         assert m.position == (0, 6, 13)
-
-
-#     def test_repr(self):
-#         pos = Position(-1, 0, 2)
-#         vel = Position(0, 0, 0)
-#         m = Moon(pos, vel)
-#         assert repr(m) == "pos=<x=-1, y= 0, z= 2>, vel=<x= 0, y= 0, z= 0>"
-
-Expected = namedtuple("Expected", ["pos", "vel"])
 
 
 def test_run_simulation_zero_rounds():
@@ -91,30 +81,30 @@ EXAMPLE_2_MOONS = [
             1,
             EXAMPLE_1_MOONS,
             [
-                Expected(pos=(2, -1, 1), vel=(3, -1, -1)),
-                Expected(pos=(3, -7, -4), vel=(1, 3, 3)),
-                Expected(pos=(1, -7, 5), vel=(-3, 1, -3)),
-                Expected(pos=(2, 2, 0), vel=(-1, -3, 1)),
+                moon.Moon((2, -1, 1), (3, -1, -1)),
+                moon.Moon((3, -7, -4), (1, 3, 3)),
+                moon.Moon((1, -7, 5), (-3, 1, -3)),
+                moon.Moon((2, 2, 0), (-1, -3, 1)),
             ],
         ),
         (
             10,
             EXAMPLE_1_MOONS,
             [
-                Expected(pos=(2, 1, -3), vel=(-3, -2, 1)),
-                Expected(pos=(1, -8, 0), vel=(-1, 1, 3)),
-                Expected(pos=(3, -6, 1), vel=(3, 2, -3)),
-                Expected(pos=(2, 0, 4), vel=(1, -1, -1)),
+                moon.Moon((2, 1, -3), (-3, -2, 1)),
+                moon.Moon((1, -8, 0), (-1, 1, 3)),
+                moon.Moon((3, -6, 1), (3, 2, -3)),
+                moon.Moon((2, 0, 4), (1, -1, -1)),
             ],
         ),
         (
             100,
             EXAMPLE_2_MOONS,
             [
-                Expected(pos=(8, -12, -9), vel=(-7, 3, 0)),
-                Expected(pos=(13, 16, -3), vel=(3, -11, -5)),
-                Expected(pos=(-29, -11, -1), vel=(-3, 7, 4)),
-                Expected(pos=(16, -13, 23), vel=(7, 1, 1)),
+                moon.Moon((8, -12, -9), (-7, 3, 0)),
+                moon.Moon((13, 16, -3), (3, -11, -5)),
+                moon.Moon((-29, -11, -1), (-3, 7, 4)),
+                moon.Moon((16, -13, 23), (7, 1, 1)),
             ],
         ),
     ],
@@ -125,5 +115,5 @@ def test_run_simulation(num_rounds, input_moons, expected_moons):
 
     for n, expected in enumerate(expected_moons):
         print("Expected=", expected, ", Actual=", actual[n])
-        assert expected.pos == actual[n].position
-        assert expected.vel == actual[n].velocity
+        assert expected.position == actual[n].position
+        assert expected.velocity == actual[n].velocity

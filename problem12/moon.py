@@ -7,16 +7,6 @@ logger = logging.getLogger(__name__)
 Tuple3 = Tuple[int, int, int]
 
 
-# class Position:
-#     def __init__(self, x: int, y: int, z: int):
-#         self.x = x
-#         self.y = y
-#         self.z = z
-
-#     def __repr__(self):
-#         return f"x={self.x: d}, y={self.y: d}, z={self.z: d}"
-
-
 class Moon:
     def __init__(self, position: Tuple3, velocity=(0, 0, 0)):
         self.position = position
