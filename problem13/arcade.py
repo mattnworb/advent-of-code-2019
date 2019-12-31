@@ -3,6 +3,16 @@ from typing import Dict
 
 from computer import Computer, RunResult
 
+from enum import Enum
+import time
+
+
+class Direction(Enum):
+    LEFT = -1
+    NEUTRAL = 0
+    RIGHT = 1
+
+
 TILE_EMPTY = 0
 TILE_WALL = 1
 TILE_BLOCK = 2
@@ -24,12 +34,40 @@ class Arcade:
         self.reset_screen()
 
     def reset_screen(self):
+        self.ball_pos = None
+        self.ball_direction = Direction.NEUTRAL
         self.screen: Dict[int, Dict[int, int]] = defaultdict(lambda: defaultdict(int))
 
     def update_screen(self, outputs):
         for n in range(0, len(outputs), 3):
             x, y, tile = outputs[n], outputs[n + 1], outputs[n + 2]
             self.screen[x][y] = tile
+
+        # where is the ball moving?
+        new_ball_pos = self.find_tile(TILE_BALL)
+        # if self.ball_pos:
+        #     if new_ball_pos[0] > self.ball_pos[0]:
+        #         self.ball_direction = Direction.RIGHT
+        #     elif new_ball_pos[0] < self.ball_pos[0]:
+        #         self.ball_direction = Direction.RIGHT
+        #     else:
+        #         self.ball_direction = Direction.NEUTRAL
+        self.ball_pos = new_ball_pos
+
+    def find_tile(self, value):
+        for x in self.screen:
+            for y in self.screen[x]:
+                if self.screen[x][y] == value:
+                    return x, y
+        return None
+
+    def count_blocks(self):
+        count = 0
+        for x in self.screen:
+            for y in self.screen[x]:
+                if self.screen[x][y] == TILE_BLOCK:
+                    count += 1
+        return count
 
     def play_once(self):
         self.reset_screen()
@@ -42,7 +80,16 @@ class Arcade:
 
         self.update_screen(outputs)
 
-    def play_continously(self):
+    def play_continously(self, print_board=False, sleep=None):
+        """
+        Plays the arcade until the computer is halted (when all blocks are
+        busted). Determines the optimal move for the paddle based on relation to
+        ball position.
+
+        Set print_board to True to print the board on each iteration. Set sleep
+        to a number to sleep for that many seconds between rounds (use a small
+        value like 0.2).
+        """
         self.reset_screen()
 
         p = list(self.program)
@@ -53,22 +100,31 @@ class Arcade:
         while result != RunResult.HALTED:
             outputs, result = self.computer.run(until_blocked=True)
             self.update_screen(outputs)
-            self.print_screen()
-            # print(result)
+            if print_board:
+                self.print_screen()
+
             score = self.screen[-1][0]
             if result == RunResult.BLOCK_ON_INPUT:
-                x = input(f"Score is {score}. Press enter to continue")
-                self.computer.add_input(0)
+                # x = input(f"Score is {score}. Enter to continue")
+                if print_board:
+                    print(f"Score is {score}")
+                if sleep:
+                    time.sleep(sleep)
+                move = self.determine_paddle_move()
+                self.computer.add_input(move.value)
             elif result == RunResult.HALTED:
                 print(f"Score is {score}. Game over")
 
-    def count_blocks(self):
-        count = 0
-        for x in self.screen:
-            for y in self.screen[x]:
-                if self.screen[x][y] == TILE_BLOCK:
-                    count += 1
-        return count
+    def determine_paddle_move(self):
+        ball = self.ball_pos
+        paddle = self.find_tile(TILE_PADDLE)
+
+        if ball[0] > paddle[0]:
+            return Direction.RIGHT
+        elif ball[0] < paddle[0]:
+            return Direction.LEFT
+        else:
+            return Direction.NEUTRAL
 
     def print_screen(self, max_y=26, stream=None):
         if stream is None:
