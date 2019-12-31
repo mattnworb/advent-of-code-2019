@@ -117,3 +117,18 @@ def test_run_simulation(num_rounds, input_moons, expected_moons):
         print("Expected=", expected, ", Actual=", actual[n])
         assert expected.position == actual[n].position
         assert expected.velocity == actual[n].velocity
+
+
+def test_total_energy_in_system():
+    moons = [
+        moon.Moon((2, 1, -3), (-3, -2, 1)),
+        moon.Moon((1, -8, 0), (-1, 1, 3)),
+        moon.Moon((3, -6, 1), (3, 2, -3)),
+        moon.Moon((2, 0, 4), (1, -1, -1)),
+    ]
+    assert 179 == moon.total_energy_in_system(moons)
+
+
+def test_total_energy_in_system2():
+    moons = moon.run_simulation(EXAMPLE_2_MOONS, 100)
+    assert 1940 == moon.total_energy_in_system(moons)

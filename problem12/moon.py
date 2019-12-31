@@ -19,6 +19,20 @@ class Moon:
         for axis in [0, 1, 2]:
             self.position = _add(self.position, axis, self.velocity[axis])
 
+    def total_energy(self):
+        # The total energy for a single moon is its potential energy multiplied
+        # by its kinetic energy. A moon's potential energy is the sum of the
+        # absolute values of its x, y, and z position coordinates. A moon's
+        # kinetic energy is the sum of the absolute values of its velocity
+        # coordinates.
+        return self.potential_energy() * self.kinetic_energy()
+
+    def potential_energy(self):
+        return sum(abs(p) for p in self.position)
+
+    def kinetic_energy(self):
+        return sum(abs(v) for v in self.velocity)
+
 
 def _add(t: Tuple3, axis: int, val: int) -> Tuple3:
     """Adds one to the value in the given position and returns new tuple"""
@@ -80,3 +94,7 @@ def apply_gravity(moons: List[Moon]) -> List[Moon]:
                 m1.velocity = _add(m1.velocity, axis, -1)
                 m2.velocity = _add(m2.velocity, axis, 1)
     return new_moons
+
+
+def total_energy_in_system(moons: List[Moon]) -> int:
+    return sum(m.total_energy() for m in moons)
