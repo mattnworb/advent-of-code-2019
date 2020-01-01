@@ -34,25 +34,12 @@ class Arcade:
         self.reset_screen()
 
     def reset_screen(self):
-        self.ball_pos = None
-        self.ball_direction = Direction.NEUTRAL
         self.screen: Dict[int, Dict[int, int]] = defaultdict(lambda: defaultdict(int))
 
     def update_screen(self, outputs):
         for n in range(0, len(outputs), 3):
             x, y, tile = outputs[n], outputs[n + 1], outputs[n + 2]
             self.screen[x][y] = tile
-
-        # where is the ball moving?
-        new_ball_pos = self.find_tile(TILE_BALL)
-        # if self.ball_pos:
-        #     if new_ball_pos[0] > self.ball_pos[0]:
-        #         self.ball_direction = Direction.RIGHT
-        #     elif new_ball_pos[0] < self.ball_pos[0]:
-        #         self.ball_direction = Direction.RIGHT
-        #     else:
-        #         self.ball_direction = Direction.NEUTRAL
-        self.ball_pos = new_ball_pos
 
     def find_tile(self, value):
         for x in self.screen:
@@ -116,7 +103,7 @@ class Arcade:
                 print(f"Score is {score}. Game over")
 
     def determine_paddle_move(self):
-        ball = self.ball_pos
+        ball = self.find_tile(TILE_BALL)
         paddle = self.find_tile(TILE_PADDLE)
 
         if ball[0] > paddle[0]:
