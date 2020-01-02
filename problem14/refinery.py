@@ -102,8 +102,6 @@ class Reactions:
                 inputs, output = self.get_inputs(item)
                 # keep this in the list, don't transform to ORE
                 if len(inputs) == 1 and inputs[0].symbol == "ORE":
-                    # print("Not breaking down", item)
-                    # output = self.get_output(inputs[0])
                     print(f"Not breaking down {item} because {inputs[0]} => {output}")
                     new_list.append(item)
                 else:
