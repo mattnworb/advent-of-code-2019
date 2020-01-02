@@ -91,7 +91,7 @@ class Reactions:
         components = [Item(count, symbol)]
 
         while True:
-            print("Components:", components)
+            # print("Components:", components)
             new_list: List[Item] = []
             broke_something_down = False
             for item in components:
@@ -102,10 +102,10 @@ class Reactions:
                 inputs, output = self.get_inputs(item)
                 # keep this in the list, don't transform to ORE
                 if len(inputs) == 1 and inputs[0].symbol == "ORE":
-                    print(f"Not breaking down {item} because {inputs[0]} => {output}")
+                    # print(f"Not breaking down {item} because {inputs[0]} => {output}")
                     new_list.append(item)
                 else:
-                    print(item, "=>", inputs, "=>", output)
+                    # print(item, "=>", inputs, "=>", output)
                     new_list.extend(inputs)
                     broke_something_down = True
 
@@ -129,25 +129,25 @@ class Reactions:
                         diff = item.num - output.num
                         credit = Item(diff, item.symbol)
                         new_list.append(credit)
-                        print(f"left over: {diff} {item.symbol}")
+                        # print(f"left over: {diff} {item.symbol}")
 
             flattened = flatten(new_list)
-            print(components, "became", new_list, "which flattens to", flattened, "\n")
+            # print(components, "became", new_list, "which flattens to", flattened, "\n")
             components = flattened
 
             if not broke_something_down:
-                print("stopping because nothing was broken down")
+                # print("stopping because nothing was broken down")
                 break
 
         # at this point, list cannot be broken down any further .. turn it into ORE
-        print("reduced components to", components)
+        # print("reduced components to", components)
         ore_needed = 0
         for item in components:
             if item.num < 0:
                 continue
             inputs, output = self.get_inputs(item)
             assert len(inputs) == 1 and inputs[0].symbol == "ORE"
-            print(item, "=>", inputs[0])
+            # print(item, "=>", inputs[0])
             ore_needed += inputs[0].num
 
         return ore_needed
