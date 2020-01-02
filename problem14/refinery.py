@@ -73,7 +73,9 @@ class Reactions:
                 assert recipe_for_symbol is None
                 recipe_for_symbol = output
 
-        assert recipe_for_symbol is not None
+        assert (
+            recipe_for_symbol is not None
+        ), f"Could not find inputs that would turn into {desired_item}"
 
         # figure out how many multiples we need
         multiples = ceil(desired_item.num / recipe_for_symbol.num)
@@ -88,20 +90,15 @@ class Reactions:
     def calculate_ore(self, count: int, symbol: str):
         components = [Item(count, symbol)]
 
-        # new algorithm:
-        # each iteration:
-        # - topological sort the component list
-        # - take last one, break down
-        # - flatten list, resort, next iteration
-        #
-
-        leftovers = []
-
         while True:
             print("Components:", components)
             new_list: List[Item] = []
             broke_something_down = False
             for item in components:
+                if item.num < 0:
+                    # recording a credit - leave alone
+                    new_list.append(item)
+                    continue
                 inputs, output = self.get_inputs(item)
                 # keep this in the list, don't transform to ORE
                 if len(inputs) == 1 and inputs[0].symbol == "ORE":
@@ -114,25 +111,42 @@ class Reactions:
                     new_list.extend(inputs)
                     broke_something_down = True
 
+                    # Lets say the item was `3 C` and the matchine reaction was
+                    # something like `10B => 5C`. Since we had to round up to go
+                    # backwards from C to B, we have 2C "left over". Record this
+                    # as a negative count item in case we later need to break
+                    # down a `C`. Without doing this, we might come across an
+                    # item like `2 C`, which if we had waited to turn C into B
+                    # until we had "all" the C, we could convert cleanly into
+                    # 10B. Without recording the "credit", we would round up 3 C
+                    # to 5 C and get 10 B and round up 2 C to 5 C and get
+                    # another 10 B for a total of 20 B - when the optimal move
+                    # was to turn (3 C + 2C) = 5 C into just 10 B.
+                    #
+                    # A better overall algorithm here would be to topologically
+                    # sort the list of components on each list iteration, and
+                    # break down the tail item repeatedly until the list had
+                    # only one item of ORE left.
                     if output.num > item.num:
-                        diff = output.num - item.num
-                        leftovers.append(Item(diff, item.symbol))
+                        diff = item.num - output.num
+                        credit = Item(diff, item.symbol)
+                        new_list.append(credit)
                         print(f"left over: {diff} {item.symbol}")
 
             flattened = flatten(new_list)
             print(components, "became", new_list, "which flattens to", flattened, "\n")
             components = flattened
 
-            leftovers = flatten(leftovers)
-
             if not broke_something_down:
+                print("stopping because nothing was broken down")
                 break
 
         # at this point, list cannot be broken down any further .. turn it into ORE
         print("reduced components to", components)
-        print("leftovers", leftovers)
         ore_needed = 0
         for item in components:
+            if item.num < 0:
+                continue
             inputs, output = self.get_inputs(item)
             assert len(inputs) == 1 and inputs[0].symbol == "ORE"
             print(item, "=>", inputs[0])

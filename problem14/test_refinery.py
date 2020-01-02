@@ -1,5 +1,7 @@
 from .refinery import Reactions, split_elements, Item
 
+import pytest  # type: ignore
+
 
 class TestItem:
     def test_eq(self):
@@ -94,6 +96,13 @@ EXAMPLE_X = """
 # 15 A, 10 B, 9 D
 # 16, 15, 19 = 41
 
+SIMPLE_BUG_REPRO = """
+3 a, 1 b, 2 c => 1 FUEL
+1 ORE => 1 a
+3 a => 2 b
+1 b => 2 c
+"""
+
 
 class TestReactions:
     def test_parse(self):
@@ -115,34 +124,44 @@ class TestReactions:
         """
         )
 
-        assert r.get_inputs(Item(6, "B")) == [Item(9, "ORE")]
-        assert r.get_inputs(Item(1, "A")) == [Item(10, "ORE")]
-        assert r.get_inputs(Item(4, "A")) == [Item(10, "ORE")]
+        assert r.get_inputs(Item(6, "B")) == ([Item(9, "ORE")], Item(6, "B"))
+        assert r.get_inputs(Item(1, "A")) == ([Item(10, "ORE")], Item(5, "A"))
+        assert r.get_inputs(Item(4, "A")) == ([Item(10, "ORE")], Item(5, "A"))
 
-        assert r.get_inputs(Item(2, "C")) == [Item(12, "A"), Item(4, "B")]
-        assert r.get_inputs(Item(3, "C")) == [Item(24, "A"), Item(8, "B")]
-        assert r.get_inputs(Item(4, "C")) == [Item(24, "A"), Item(8, "B")]
+        assert r.get_inputs(Item(2, "C")) == (
+            [Item(12, "A"), Item(4, "B")],
+            Item(2, "C"),
+        )
+        assert r.get_inputs(Item(3, "C")) == (
+            [Item(24, "A"), Item(8, "B")],
+            Item(4, "C"),
+        )
+        assert r.get_inputs(Item(4, "C")) == (
+            [Item(24, "A"), Item(8, "B")],
+            Item(4, "C"),
+        )
 
-    def test_calculate_ore_ex1(self):
-        r = Reactions.parse(EXAMPLE_1)
-        assert 31 == r.calculate_ore(1, "FUEL")
-
-    def test_calculate_ore_ex2(self):
-        r = Reactions.parse(EXAMPLE_2)
-        assert 165 == r.calculate_ore(1, "FUEL")
-
-    def test_calculate_ore_ex3(self):
-        r = Reactions.parse(EXAMPLE_3)
-        assert 13312 == r.calculate_ore(1, "FUEL")
-
-    def test_calculate_ore_ex4(self):
-        r = Reactions.parse(EXAMPLE_4)
-        assert 180697 == r.calculate_ore(1, "FUEL")
-
-    def test_calculate_ore_ex5(self):
-        r = Reactions.parse(EXAMPLE_5)
-        assert 2210736 == r.calculate_ore(1, "FUEL")
-
-    def test_calculate_ore_exx(self):
-        r = Reactions.parse(EXAMPLE_X)
-        assert 41 == r.calculate_ore(1, "FUEL")
+    @pytest.mark.parametrize(
+        "recipe,expected",
+        [
+            (EXAMPLE_1, 31),
+            (EXAMPLE_2, 165),
+            (EXAMPLE_3, 13312),
+            (EXAMPLE_4, 180697),
+            (EXAMPLE_5, 2210736),
+            (EXAMPLE_X, 41),
+            (SIMPLE_BUG_REPRO, 6),
+        ],
+        ids=[
+            "EXAMPLE_1",
+            "EXAMPLE_2",
+            "EXAMPLE_3",
+            "EXAMPLE_4",
+            "EXAMPLE_5",
+            "EXAMPLE_X",
+            "SIMPLE_BUG_REPRO",
+        ],
+    )
+    def test_calculate_ore(self, recipe, expected):
+        r = Reactions.parse(recipe)
+        assert expected == r.calculate_ore(1, "FUEL")
