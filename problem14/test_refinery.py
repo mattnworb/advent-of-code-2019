@@ -1,6 +1,32 @@
-from .refinery import Reactions, split_elements, Item
+from .refinery import Reactions, split_elements, Item, topological_sort
 
 import pytest  # type: ignore
+
+
+def test_topological_sort():
+    g = {"a": ["b", "c"], "b": ["d", "e"], "d": ["f"]}
+
+    ts = topological_sort(g)
+    # don't need to assert length, below code implicity asserts each node in
+    # the graph is in the list.
+
+    # "a topological sort or topological ordering of a directed graph is a
+    # linear ordering of its vertices such that for every directed edge uv from
+    # vertex u to vertex v, u comes before v in the ordering"
+    for u in g:
+        for v in g[u]:
+            u_pos = ts.index(u)
+            v_pos = ts.index(v)
+            assert u_pos < v_pos
+
+
+def test_topological_sort_with_cycle():
+    # same as above but with a connection from d -> a
+    g = {"a": ["b", "c"], "b": ["d", "e"], "d": ["f", "a"]}
+
+    with pytest.raises(ValueError) as excinfo:
+        ts = topological_sort(g)
+    excinfo.match("cycle in graph")
 
 
 class TestItem:
