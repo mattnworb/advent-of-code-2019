@@ -4,6 +4,10 @@ import random
 import collections
 from typing import Counter
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 def choose_next_move_manually(robot: RepairDroid) -> Direction:
     next_move = ""
@@ -38,8 +42,15 @@ def choose_next_move_based_on_explorable_positions(
         return None
     dest = candidates[0]
 
+    assert robot.ship_map[dest] != Tile.WALL
+
     moves = robot.compute_path(dest)
     assert moves, f"No path from {robot.current_pos()} to destination {dest}?"
+
+    logger.info("candidates=%s", candidates)
+    logger.info(
+        "destination=%s, move=%s, dest is %s", dest, moves[0], robot.ship_map[dest]
+    )
     return moves[0]
 
 
@@ -52,10 +63,9 @@ if __name__ == "__main__":
 
     robot = RepairDroid(program)
 
-    visited_positions: Counter[Position] = collections.Counter()
+    destinations = []
 
     rounds = 10000
-    # print(f"Making random moves for {rounds} rounds")
     for step in range(1, rounds + 1):
         # robot.print_screen()
 
@@ -64,20 +74,39 @@ if __name__ == "__main__":
         next_move = choose_next_move_based_on_explorable_positions(robot)
 
         if not next_move:
-            print(f"no more explorable positions to move to after round {step}")
+            logger.info("no more explorable positions to move to after round %d", step)
             break
 
+        destinations.append(add_to_position(robot.current_pos(), next_move))
+
         robot.move_once(next_move)
+        logger.info(
+            "step %d: after move=%s, robot is at %s",
+            step,
+            next_move,
+            robot.current_pos(),
+        )
 
-        visited_positions[robot.current_pos()] += 1
+        if robot.oxygen_station():
+            print(f"found oxygen station after {step} steps")
+            break
 
-        # print("\n\n")
+        if step % 100 == 0:
+            explorable = list(robot.explorable_positions())
+            # print(f"Step {step}, tile count: {robot.count_tiles()}, explorable positions: {len(explorable)}")
+            print(f"Step {step}, explorable positions: {len(explorable)}")
+
     print()
     print(f"Map after {rounds} iterations:")
     robot.print_screen()
+
     o = robot.oxygen_station()
+    print()
+    print("robot position", robot.current_pos())
     print("Found oxygen station:", o if o else "No")
     print("Has unexplored positions:", robot.has_explorable_positions())
     print("Tile count:", robot.count_tiles())
     # print(len(robot.computer.memory))
-    print("Visited positions", visited_positions.most_common(10))
+    print(
+        "Most common destinations:", collections.Counter(destinations).most_common(10)
+    )

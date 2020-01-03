@@ -1,4 +1,4 @@
-from collections import defaultdict
+from collections import defaultdict, Counter
 from typing import Dict, Tuple, Optional, Iterator, List, Set, Union
 from enum import Enum, unique
 from computer import Computer, RunResult
@@ -196,14 +196,8 @@ class RepairDroid:
             if sibling not in self.ship_map or self.ship_map[sibling] != Tile.WALL:
                 yield sibling
 
-    def count_tiles(self) -> Dict[Tile, int]:
-        c: Dict[Tile, int] = {}
-        for position, tile in self.ship_map.items():
-            if tile not in c:
-                c[tile] = 1
-            else:
-                c[tile] += 1
-        return c
+    def count_tiles(self) -> Dict[str, int]:
+        return dict(Counter(tile.name for tile in self.ship_map.values()))
 
     def move_once(self, direction: Direction):
         self.computer.add_input(direction.value)
@@ -235,6 +229,7 @@ class RepairDroid:
         if output == 2:
             self.ship_map[intended] = Tile.OXYGEN_STATION
             self.pos = intended
+            self.oxygen_station_pos = intended
 
     def print_screen(self):
         min_x, max_x, min_y, max_y = 0, 0, 0, 0
@@ -251,9 +246,12 @@ class RepairDroid:
         for y in range(min_y, max_y + 1):
             line = ""
             for x in range(min_x, max_x + 1):
-                if self.pos == (x, y):
+                p = (x, y)
+                if p == self.pos:
                     ch = "D"
+                elif p == (0, 0):
+                    ch = "S"
                 else:
-                    ch = self.ship_map[(x, y)].value
+                    ch = self.ship_map[p].value
                 line += ch
             print(line)
