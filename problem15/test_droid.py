@@ -58,7 +58,11 @@ class TestRepairDroid:
     def test_has_explorable_positions(self, robot: RepairDroid, expected_set):
         assert robot.has_explorable_positions() == (len(expected_set) > 0)
 
-    def test_compute_path(self):
+    def test_explorable_positions_initial_robot(self):
+        robot = RepairDroid([])
+        assert set(robot.explorable_positions()) == {(0, 1), (0, -1), (1, 0), (-1, 0)}
+
+    def test_compute_path_optimal(self):
         robot = parse_map(EXAMPLE_MAP)
         # use (0,1) as destination since there are non-optimal routes to it
         dest = (0, 1)
@@ -68,4 +72,16 @@ class TestRepairDroid:
             Direction.WEST,
             Direction.WEST,
             Direction.WEST,
+        ]
+
+    def test_compute_path(self):
+        robot = parse_map(EXAMPLE_MAP)
+        dest = (0, 0)
+
+        assert robot.compute_path(dest) == [
+            Direction.NORTH,
+            Direction.WEST,
+            Direction.WEST,
+            Direction.WEST,
+            Direction.NORTH,
         ]

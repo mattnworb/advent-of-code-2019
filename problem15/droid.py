@@ -1,5 +1,5 @@
 from collections import defaultdict
-from typing import Dict, Tuple, Optional, Iterator
+from typing import Dict, Tuple, Optional, Iterator, List
 from enum import Enum, unique
 from computer import Computer, RunResult
 
@@ -56,7 +56,11 @@ class RepairDroid:
             program, initial_memory_size=2000, max_memory_length=10000
         )
         self.ship_map: ShipMap = defaultdict(lambda: Tile.UNKNOWN)
+
+        # the robot's initial position is traversable by definition
         self.pos = (0, 0)
+        self.ship_map[self.pos] = Tile.TRAVERSABLE
+
         self.oxygen_station_pos = None
 
     def known_map(self) -> ShipMap:
@@ -110,45 +114,77 @@ class RepairDroid:
         distances = {pos: inf for pos in self.ship_map if pos != self.pos}
         distances[self.pos] = 0
 
-        prev = {}
+        prev: Dict[Position, Position] = {}
 
         current = self.pos
         while unvisited:
-            for neighbor in self.traversable_neighbors(current):
-                if neighbor in unvisited:
-                    distances[neighbor] = min(
-                        distances[neighbor], distances[current] + 1
-                    )
-            unvisited.remove(current)
-            if current == dest:
-                # stop
-                break
-            smallest_distance, node_with_smallest_distance = None, None
+            smallest_distance, u = None, None
             for node in unvisited:
                 distance = distances[node]
                 if smallest_distance is None or distance < smallest_distance:
                     smallest_distance = distance
-                    node_with_smallest_distance = node
+                    u = node
 
             if smallest_distance == inf:
-                # stop
+                raise ValueError(f"no path to {dest}")
+
+            assert u is not None
+            unvisited.remove(u)
+
+            if u == dest:
                 break
-            current = node_with_smallest_distance
-        print("Dest:", dest)
 
-        min_pos = min(distances)
-        max_pos = max(distances)
+            for neighbor in self.traversable_neighbors(u):
+                if neighbor in unvisited:
+                    tentative = distances[u] + 1
+                    if tentative < distances[neighbor]:
+                        distances[neighbor] = tentative
+                        prev[neighbor] = u
 
-        print("Distances:")
-        for y in range(min_pos[1], max_pos[1] + 1):
-            line = ""
-            for x in range(min_pos[0], max_pos[0] + 1):
-                p = (x, y)
-                if p not in distances or distances[p] == inf:
-                    line += "#"
-                else:
-                    line += str(distances[p])
-            print(line)
+        # print("Dest:", dest)
+
+        # min_pos = min(distances)
+        # max_pos = max(distances)
+
+        # print("Distances:")
+        # for y in range(min_pos[1], max_pos[1] + 1):
+        #     line = ""
+        #     for x in range(min_pos[0], max_pos[0] + 1):
+        #         p = (x, y)
+        #         if p not in distances or distances[p] == inf:
+        #             line += "?"
+        #         else:
+        #             line += str(distances[p])
+        #     print(line)
+
+        path: List[Position] = []
+        current = dest
+        while current in prev and current != self.pos:
+            path.insert(0, current)
+            current = prev[current]
+
+        print(f"Path from current={self.pos} to dest={dest}: {path}")
+
+        directions = []
+        current = self.pos
+        for node in path:
+            # what direction takes us from current to node?
+            x1, y1 = current
+            x2, y2 = node
+            if x1 == x2 and y1 == y2 + 1:
+                d = Direction.NORTH
+            elif x1 == x2 and y1 == y2 - 1:
+                d = Direction.SOUTH
+            elif x1 == x2 + 1 and y1 == y2:
+                d = Direction.WEST
+            elif x1 == x2 - 1 and y1 == y2:
+                d = Direction.EAST
+            else:
+                raise ValueError("oops")
+            # print(f'current={current} to {node}: {d}')
+            directions.append(d)
+            current = node
+        return directions
 
     def traversable_neighbors(self, node: Position) -> Iterator[Position]:
         """Return the traversable neighors of a given node"""

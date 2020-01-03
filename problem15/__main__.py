@@ -2,6 +2,7 @@ from .droid import *
 from computer import parse_program
 import random
 import collections
+from typing import Counter
 
 
 def choose_next_move_manually(robot: RepairDroid) -> Direction:
@@ -50,15 +51,20 @@ if __name__ == "__main__":
 
     robot = RepairDroid(program)
 
-    visited_positions = collections.Counter()
+    visited_positions: Counter[Position] = collections.Counter()
 
     rounds = 10000
-    print(f"Making random moves for {rounds} rounds")
-    for step in range(rounds):
+    # print(f"Making random moves for {rounds} rounds")
+    for step in range(1, rounds + 1):
         # robot.print_screen()
 
-        # next_move = choose_next_move_manually(robot.current_pos(), robot.known_map())
-        next_move = choose_next_move_randomly(robot.current_pos(), robot.known_map())
+        # next_move = choose_next_move_manually(robot)
+        # next_move = choose_next_move_randomly(robot)
+        next_move = choose_next_move_based_on_explorable_positions(robot)
+
+        if not next_move:
+            print(f"no more explorable positions to move to after round {step}")
+            break
 
         robot.move_once(next_move)
 
