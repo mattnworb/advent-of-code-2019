@@ -39,6 +39,7 @@ def choose_next_move_based_on_explorable_positions(
     dest = candidates[0]
 
     moves = robot.compute_path(dest)
+    assert moves, f"No path from {robot.current_pos()} to destination {dest}?"
     return moves[0]
 
 

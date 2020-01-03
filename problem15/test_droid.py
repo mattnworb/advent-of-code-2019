@@ -78,10 +78,30 @@ class TestRepairDroid:
         robot = parse_map(EXAMPLE_MAP)
         dest = (0, 0)
 
-        assert robot.compute_path(dest) == [
-            Direction.NORTH,
-            Direction.WEST,
-            Direction.WEST,
-            Direction.WEST,
-            Direction.NORTH,
+        # two equivalent paths
+        valid_paths = [
+            [
+                Direction.NORTH,
+                Direction.WEST,
+                Direction.WEST,
+                Direction.WEST,
+                Direction.NORTH,
+            ],
+            [
+                Direction.NORTH,
+                Direction.WEST,
+                Direction.WEST,
+                Direction.NORTH,
+                Direction.WEST,
+            ],
         ]
+        assert robot.compute_path(dest) in valid_paths
+
+    def test_compute_path_initial_state(self):
+        robot = RepairDroid([])
+        dest = (0, 1)
+
+        assert robot.compute_path((0, -1)) == [Direction.NORTH]
+        assert robot.compute_path((0, 1)) == [Direction.SOUTH]
+        assert robot.compute_path((-1, 0)) == [Direction.WEST]
+        assert robot.compute_path((1, 0)) == [Direction.EAST]

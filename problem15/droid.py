@@ -102,17 +102,19 @@ class RepairDroid:
                         frontier.add(next_pos)
 
     def compute_path(self, dest: Position) -> List[Direction]:
-        # can't route to wall or unknown tile
-        assert (
-            dest in self.ship_map and self.ship_map[dest] != Tile.WALL
-        ), "dest is not traversable tile"
+        # can't route to wall
+        assert self.ship_map[dest] != Tile.WALL, "dest cannot be wall"
 
-        unvisited = set(
-            pos for pos, tile in self.ship_map.items() if tile == Tile.TRAVERSABLE
-        )
+        unvisited: Set[Position] = set()
+        distances: Dict[Position, Int] = {}
+        for pos, tile in self.ship_map.items():
+            if tile == Tile.TRAVERSABLE or tile == Tile.OXYGEN_STATION:
+                unvisited.add(pos)
+                for neighbor in self.nonwall_neighbors(pos):
+                    unvisited.add(neighbor)
 
         inf = float("inf")
-        distances = {pos: inf for pos in self.ship_map if pos != self.pos}
+        distances = {pos: inf for pos in unvisited if pos != self.pos}
         distances[self.pos] = 0
 
         prev: Dict[Position, Position] = {}
@@ -135,7 +137,7 @@ class RepairDroid:
             if u == dest:
                 break
 
-            for neighbor in self.traversable_neighbors(u):
+            for neighbor in self.nonwall_neighbors(u):
                 if neighbor in unvisited:
                     tentative = distances[u] + 1
                     if tentative < distances[neighbor]:
@@ -164,7 +166,7 @@ class RepairDroid:
             path.insert(0, current)
             current = prev[current]
 
-        print(f"Path from current={self.pos} to dest={dest}: {path}")
+        # print(f"Path from current={self.pos} to dest={dest}: {path}")
 
         directions = []
         current = self.pos
@@ -187,11 +189,11 @@ class RepairDroid:
             current = node
         return directions
 
-    def traversable_neighbors(self, node: Position) -> Iterator[Position]:
-        """Return the traversable neighors of a given node"""
+    def nonwall_neighbors(self, node: Position) -> Iterator[Position]:
+        """Return the non-wall neighors of a given node"""
         for d in Direction:
             sibling = add_to_position(node, d)
-            if sibling in self.ship_map and self.ship_map[sibling] == Tile.TRAVERSABLE:
+            if sibling not in self.ship_map or self.ship_map[sibling] != Tile.WALL:
                 yield sibling
 
     def count_tiles(self) -> Dict[Tile, int]:
