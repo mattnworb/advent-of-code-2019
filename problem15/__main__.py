@@ -1,9 +1,10 @@
 from .droid import *
 from computer import parse_program
 import random
+import collections
 
 
-def choose_next_move_manually(robot_pos: Position, known_map: ShipMap) -> Direction:
+def choose_next_move_manually(robot: RepairDroid) -> Direction:
     next_move = ""
     while next_move == "":
         next_move = input("Next move: (N, S, W, E): ")
@@ -12,7 +13,10 @@ def choose_next_move_manually(robot_pos: Position, known_map: ShipMap) -> Direct
     return Direction.from_str(next_move)
 
 
-def choose_next_move_randomly(robot_pos: Position, known_map: ShipMap) -> Direction:
+def choose_next_move_randomly(robot: RepairDroid) -> Direction:
+    robot_pos = robot.current_pos()
+    known_map = robot.known_map()
+
     valid_directions = list(Direction)
     random.shuffle(valid_directions)
     for d in valid_directions:
@@ -20,6 +24,21 @@ def choose_next_move_randomly(robot_pos: Position, known_map: ShipMap) -> Direct
         if p not in known_map or known_map[p] != Tile.WALL:
             return d
     raise ValueError()
+
+
+def choose_next_move_based_on_explorable_positions(
+    robot: RepairDroid,
+) -> Optional[Direction]:
+
+    # TODO avoid recalculating this on every choice, instead choose an
+    # unexplored position, compute a path, then follow the path until reached.
+    candidates = sorted(robot.explorable_positions())
+    if not candidates:
+        return None
+    dest = candidates[0]
+
+    moves = robot.compute_path(dest)
+    return moves[0]
 
 
 if __name__ == "__main__":
@@ -31,7 +50,9 @@ if __name__ == "__main__":
 
     robot = RepairDroid(program)
 
-    rounds = 100000
+    visited_positions = collections.Counter()
+
+    rounds = 10000
     print(f"Making random moves for {rounds} rounds")
     for step in range(rounds):
         # robot.print_screen()
@@ -40,6 +61,8 @@ if __name__ == "__main__":
         next_move = choose_next_move_randomly(robot.current_pos(), robot.known_map())
 
         robot.move_once(next_move)
+
+        visited_positions[robot.current_pos()] += 1
 
         # print("\n\n")
     print()
@@ -50,3 +73,4 @@ if __name__ == "__main__":
     print("Has unexplored positions:", robot.has_explorable_positions())
     print("Tile count:", robot.count_tiles())
     # print(len(robot.computer.memory))
+    print("Visited positions", visited_positions.most_common(10))

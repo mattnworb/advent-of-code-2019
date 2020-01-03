@@ -1,5 +1,5 @@
 from collections import defaultdict
-from typing import Dict, Tuple, Optional
+from typing import Dict, Tuple, Optional, Iterator
 from enum import Enum, unique
 from computer import Computer, RunResult
 
@@ -59,9 +59,6 @@ class RepairDroid:
         self.pos = (0, 0)
         self.oxygen_station_pos = None
 
-        outputs, result = self.computer.run(until_blocked=True)
-        assert result == RunResult.BLOCK_ON_INPUT, f"result was unexpected {result}"
-
     def known_map(self) -> ShipMap:
         """Return a copy of the known map"""
         return dict(self.ship_map)
@@ -74,14 +71,91 @@ class RepairDroid:
 
     def has_explorable_positions(self) -> bool:
         """Test if there are any positions on the map with unknown regions next to them."""
+        # any(self.explorable_positions()) will treat a position like (0, 0) as False
+        return any(True for p in self.explorable_positions())
+
+    def explorable_positions(self) -> Iterator[Position]:
+        """
+        Iterate over explorable positions on the map. A position is explorable
+        if it is traversable and it has unknown neighbors (i.e. positions to be
+        explored).
+        """
+
         for position, tile in self.ship_map.items():
             if tile != Tile.TRAVERSABLE:
                 continue
+            has_unknown_neighbors = False
             for d in Direction:
                 sibling = add_to_position(position, d)
-                if self.ship_map[sibling] == Tile.UNKNOWN:
-                    return True
-        return False
+                if (
+                    sibling not in self.ship_map
+                    or self.ship_map[sibling] == Tile.UNKNOWN
+                ):
+                    has_unknown_neighbors = True
+
+            if has_unknown_neighbors:
+                yield position
+
+    def compute_path(self, dest: Position) -> List[Direction]:
+        # can't route to wall or unknown tile
+        assert (
+            dest in self.ship_map and self.ship_map[dest] != Tile.WALL
+        ), "dest is not traversable tile"
+
+        unvisited = set(
+            pos for pos, tile in self.ship_map.items() if tile == Tile.TRAVERSABLE
+        )
+
+        inf = float("inf")
+        distances = {pos: inf for pos in self.ship_map if pos != self.pos}
+        distances[self.pos] = 0
+
+        prev = {}
+
+        current = self.pos
+        while unvisited:
+            for neighbor in self.traversable_neighbors(current):
+                if neighbor in unvisited:
+                    distances[neighbor] = min(
+                        distances[neighbor], distances[current] + 1
+                    )
+            unvisited.remove(current)
+            if current == dest:
+                # stop
+                break
+            smallest_distance, node_with_smallest_distance = None, None
+            for node in unvisited:
+                distance = distances[node]
+                if smallest_distance is None or distance < smallest_distance:
+                    smallest_distance = distance
+                    node_with_smallest_distance = node
+
+            if smallest_distance == inf:
+                # stop
+                break
+            current = node_with_smallest_distance
+        print("Dest:", dest)
+
+        min_pos = min(distances)
+        max_pos = max(distances)
+
+        print("Distances:")
+        for y in range(min_pos[1], max_pos[1] + 1):
+            line = ""
+            for x in range(min_pos[0], max_pos[0] + 1):
+                p = (x, y)
+                if p not in distances or distances[p] == inf:
+                    line += "#"
+                else:
+                    line += str(distances[p])
+            print(line)
+
+    def traversable_neighbors(self, node: Position) -> Iterator[Position]:
+        """Return the traversable neighors of a given node"""
+        for d in Direction:
+            sibling = add_to_position(node, d)
+            if sibling in self.ship_map and self.ship_map[sibling] == Tile.TRAVERSABLE:
+                yield sibling
 
     def count_tiles(self) -> Dict[Tile, int]:
         c: Dict[Tile, int] = {}
