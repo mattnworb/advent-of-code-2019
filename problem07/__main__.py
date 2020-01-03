@@ -3,8 +3,7 @@ from computer import parse_program
 
 if __name__ == "__main__":
     with open("problem07/input", "r") as f:
-        my_input = f.readlines()
-        my_input = "".join(my_input)
+        my_input = f.read(-1).strip()
 
     program = parse_program(my_input)
 
