@@ -23,5 +23,5 @@ if __name__ == "__main__":
     # moon.run_simulation(inp, rounds)
     # print(rounds, 'done')
 
-    print("Part 2")
+    print("\nPart 2")
     print(moon.steps_until_repeat(inp, max_search_rounds=1_000_000))

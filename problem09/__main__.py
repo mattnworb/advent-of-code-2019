@@ -36,5 +36,5 @@ if __name__ == "__main__":
     outputs, result = c.run()
 
     assert result == computer.RunResult.HALTED
-    print("Part 2:")
+    print("\nPart 2:")
     print(outputs)

@@ -31,5 +31,5 @@ if __name__ == "__main__":
 
     vaporized = problem10.map.vaporize_order(m)
 
-    print("Round 2")
+    print("\nPart 2")
     print(f"200th vaporized asteroid: {vaporized[199]}")

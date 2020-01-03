@@ -29,5 +29,5 @@ if __name__ == "__main__":
     print("Part 1:")
     print(product)
 
-    print("Part 2:")
+    print("\nPart 2:")
     print(image.render(black_char=u"\u25A1", white_char=u"\u25A0"))
