@@ -1,5 +1,5 @@
 from enum import Enum, unique
-from typing import List, Tuple
+from typing import List, Tuple, Optional
 import logging
 
 
@@ -51,11 +51,20 @@ def parse_program(program_string):
 
 class Computer(object):
     def __init__(
-        self, opcodes: List[int], inputs=None, max_memory_length: int = MAX_MEMORY
+        self,
+        opcodes: List[int],
+        inputs=None,
+        max_memory_length: int = MAX_MEMORY,
+        initial_memory_size: Optional[int] = None,
     ):
         self.logger = logging.getLogger(__name__)
 
         self.memory: List[int] = list(opcodes)  # make a copy
+        self.max_memory_length = max_memory_length
+
+        if initial_memory_size:
+            self.extend_memory_if_necessary(initial_memory_size)
+
         self.pos = 0
 
         self.input_queue: List[int] = []
@@ -65,8 +74,6 @@ class Computer(object):
             else:
                 for i in inputs:
                     self.add_input(i)
-
-        self.max_memory_length = max_memory_length
 
         self.current_op = None
         self.param_modes: List[ParamMode] = []
