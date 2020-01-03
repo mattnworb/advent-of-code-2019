@@ -58,10 +58,10 @@ def run_amplifiers(count, phase_settings, opcodes, feedback_mode=False):
             phase = phase_settings[n]
             inputs = [phase, output_from_last]
             c = Computer(opcodes, inputs)
-            output, result = c.run()
+            outputs, result = c.run()
             assert (
-                len(output) == 1
-            ), f"Expected output length of 1 but got {len(output)}"
-            output_from_last = output[0]
+                len(outputs) == 1
+            ), f"Expected output length of 1 but got {len(outputs)}"
+            output_from_last = outputs[0]
 
         return output_from_last
