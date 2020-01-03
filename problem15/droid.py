@@ -1,5 +1,5 @@
 from collections import defaultdict
-from typing import Dict, Tuple, Optional, Iterator, List, Set
+from typing import Dict, Tuple, Optional, Iterator, List, Set, Union
 from enum import Enum, unique
 from computer import Computer, RunResult
 
@@ -106,7 +106,7 @@ class RepairDroid:
         assert self.ship_map[dest] != Tile.WALL, "dest cannot be wall"
 
         unvisited: Set[Position] = set()
-        distances: Dict[Position, Int] = {}
+        distances: Dict[Position, Union[int, float]] = {}
         for pos, tile in self.ship_map.items():
             if tile == Tile.TRAVERSABLE or tile == Tile.OXYGEN_STATION:
                 unvisited.add(pos)
