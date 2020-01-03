@@ -1,7 +1,7 @@
 import logging
 from sys import stdout
 
-logging.basicConfig(level=logging.INFO)
+# logging.basicConfig(level=logging.INFO)
 
 import pytest  # type: ignore
 
