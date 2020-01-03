@@ -1,5 +1,5 @@
 from collections import defaultdict
-from typing import Dict, Tuple
+from typing import Dict, Tuple, Optional
 from enum import Enum, unique
 from computer import Computer, RunResult
 
@@ -33,14 +33,64 @@ class Direction(Enum):
         raise ValueError()
 
 
+Position = Tuple[int, int]
+ShipMap = Dict[Position, Tile]
+
+
+def add_to_position(position: Position, direction: Direction) -> Position:
+    if direction == Direction.NORTH:
+        return (position[0], position[1] - 1)
+    if direction == Direction.SOUTH:
+        return (position[0], position[1] + 1)
+    if direction == Direction.WEST:
+        return (position[0] - 1, position[1])
+    if direction == Direction.EAST:
+        return (position[0] + 1, position[1])
+
+    raise ValueError()
+
+
 class RepairDroid:
     def __init__(self, program):
-        self.computer = Computer(program)
-        self.ship_map: Dict[Tuple[int, int], Tile] = defaultdict(lambda: Tile.UNKNOWN)
+        self.computer = Computer(
+            program, initial_memory_size=2000, max_memory_length=10000
+        )
+        self.ship_map: ShipMap = defaultdict(lambda: Tile.UNKNOWN)
         self.pos = (0, 0)
+        self.oxygen_station_pos = None
 
         outputs, result = self.computer.run(until_blocked=True)
         assert result == RunResult.BLOCK_ON_INPUT, f"result was unexpected {result}"
+
+    def known_map(self) -> ShipMap:
+        """Return a copy of the known map"""
+        return dict(self.ship_map)
+
+    def current_pos(self) -> Position:
+        return self.pos
+
+    def oxygen_station(self) -> Optional[Position]:
+        return self.oxygen_station_pos
+
+    def has_explorable_positions(self) -> bool:
+        """Test if there are any positions on the map with unknown regions next to them."""
+        for position, tile in self.ship_map.items():
+            if tile != Tile.TRAVERSABLE:
+                continue
+            for d in Direction:
+                sibling = add_to_position(position, d)
+                if self.ship_map[sibling] == Tile.UNKNOWN:
+                    return True
+        return False
+
+    def count_tiles(self) -> Dict[Tile, int]:
+        c: Dict[Tile, int] = {}
+        for position, tile in self.ship_map.items():
+            if tile not in c:
+                c[tile] = 1
+            else:
+                c[tile] += 1
+        return c
 
     def move_once(self, direction: Direction):
         self.computer.add_input(direction.value)
@@ -60,7 +110,7 @@ class RepairDroid:
         #   its new position is the location of the oxygen system.
         assert output in [0, 1, 2]
 
-        intended = self.add_to_position(direction)
+        intended = add_to_position(self.pos, direction)
 
         if output == 0:
             self.ship_map[intended] = Tile.WALL
@@ -72,22 +122,6 @@ class RepairDroid:
         if output == 2:
             self.ship_map[intended] = Tile.OXYGEN_STATION
             self.pos = intended
-
-    def add_to_position(self, direction) -> Tuple[int, int]:
-        """
-        Add the direction to the current position, returning the result, *not*
-        updating self.pos.
-        """
-        if direction == Direction.NORTH:
-            return (self.pos[0], self.pos[1] - 1)
-        if direction == Direction.SOUTH:
-            return (self.pos[0], self.pos[1] + 1)
-        if direction == Direction.WEST:
-            return (self.pos[0] - 1, self.pos[1])
-        if direction == Direction.EAST:
-            return (self.pos[0] + 1, self.pos[1])
-
-        raise ValueError()
 
     def print_screen(self):
         min_x, max_x, min_y, max_y = 0, 0, 0, 0
