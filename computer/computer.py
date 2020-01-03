@@ -1,7 +1,6 @@
 from enum import Enum, unique
-from typing import List
+from typing import List, Tuple
 import logging
-import queue
 
 
 class RunResult(Enum):
@@ -51,13 +50,15 @@ def parse_program(program_string):
 
 
 class Computer(object):
-    def __init__(self, opcodes, inputs=None, max_memory_length=MAX_MEMORY):
+    def __init__(
+        self, opcodes: List[int], inputs=None, max_memory_length: int = MAX_MEMORY
+    ):
         self.logger = logging.getLogger(__name__)
 
-        self.memory = list(opcodes)  # make a copy
+        self.memory: List[int] = list(opcodes)  # make a copy
         self.pos = 0
 
-        self.input_queue: queue.Queue = queue.Queue()
+        self.input_queue: List[int] = []
         if inputs:
             if isinstance(inputs, int):
                 self.add_input(inputs)
@@ -68,12 +69,12 @@ class Computer(object):
         self.max_memory_length = max_memory_length
 
         self.current_op = None
-        self.param_modes = []
+        self.param_modes: List[ParamMode] = []
         self.relative_base = 0
         self.run_until_block_mode = False
         self.halted = False
 
-    def read(self, absolute=None, offset=None):
+    def read(self, absolute: int = None, offset: int = None) -> int:
         """Reads one value from memory"""
 
         if absolute is not None:
@@ -90,13 +91,13 @@ class Computer(object):
         self.logger.debug("read: reading address=%d, value=%d", addr, value)
         return value
 
-    def write(self, value, addr):
+    def write(self, value: int, addr: int):
         """Writes value to memory at address addr"""
         self.extend_memory_if_necessary(addr)
         self.logger.debug("write: writing address=%d, value=%d", addr, value)
         self.memory[addr] = value
 
-    def read_param(self, param_num):
+    def read_param(self, param_num: int) -> int:
         """
         Reads a value from memory based on the given parameter number
         (one-indexed), taking its parameter mode into account.
@@ -124,7 +125,7 @@ class Computer(object):
         else:
             raise ValueError(f"unknown param mode: {mode}")
 
-    def write_param(self, param_num, value):
+    def write_param(self, param_num: int, value: int):
         """
         Write a value to memory based on the given parameter number
         (one-indexed),taking its parameter mode into account.
@@ -153,7 +154,7 @@ class Computer(object):
         else:
             raise ValueError(f"unknown param mode: {mode}")
 
-    def extend_memory_if_necessary(self, pos):
+    def extend_memory_if_necessary(self, pos: int):
         assert (
             pos < self.max_memory_length
         ), f"pos={pos} is too high, max memory setting ({self.max_memory_length})"
@@ -161,9 +162,9 @@ class Computer(object):
         while pos >= len(self.memory):
             self.memory.append(0)
 
-    def add_input(self, val):
+    def add_input(self, val: int):
         """Add input val to end of input queue"""
-        self.input_queue.put(val, block=False)
+        self.input_queue.append(val)
 
     # opcode 1
     def add(self):
@@ -190,10 +191,10 @@ class Computer(object):
     # given by its only parameter. For example, the instruction 3,50 would
     # take an input value and store it at address 50.
     def read_input(self):
-        if self.run_until_block_mode and self.input_queue.empty():
+        if self.run_until_block_mode and len(self.input_queue) == 0:
             return True
 
-        next_input = self.input_queue.get(block=False)
+        next_input = self.input_queue.pop(0)
         self.logger.info("read_input: input is %d", next_input)
         self.write_param(1, next_input)
 
@@ -304,7 +305,7 @@ class Computer(object):
         self.current_op = opcode
         self.param_modes = param_modes
 
-    def run(self, until_blocked=False):
+    def run(self, until_blocked=False) -> Tuple[List[int], RunResult]:
         """
         Runs the program until halted, or if until_blocked is True, stops when blocked on input. Returns the output. 
         To check the program after running, look at .opcodes.
@@ -326,6 +327,10 @@ class Computer(object):
                 return self.output, result
             elif result == RunResult.BLOCK_ON_INPUT and until_blocked == True:
                 return self.output, result
+
+        raise ValueError(
+            f"Logic error: pos ({self.pos}) past memory (len={len(self.memory)})"
+        )
 
     def run_one_iteration(self) -> RunResult:
         """Runs one instruction of the program."""
