@@ -1,5 +1,5 @@
 from collections import defaultdict
-from typing import Dict, Tuple, Optional, Iterator, List
+from typing import Dict, Tuple, Optional, Iterator, List, Set
 from enum import Enum, unique
 from computer import Computer, RunResult
 
@@ -80,25 +80,26 @@ class RepairDroid:
 
     def explorable_positions(self) -> Iterator[Position]:
         """
-        Iterate over explorable positions on the map. A position is explorable
-        if it is traversable and it has unknown neighbors (i.e. positions to be
-        explored).
+        Iterate over explorable positions on the map. A position is "explorable"
+        if its tile is currently unknown and there is a path from the robot's
+        current position to it. In other words, this iterator gives the set of
+        positions the robot could move to and learn something new about the map.
         """
 
-        for position, tile in self.ship_map.items():
-            if tile != Tile.TRAVERSABLE:
-                continue
-            has_unknown_neighbors = False
-            for d in Direction:
-                sibling = add_to_position(position, d)
-                if (
-                    sibling not in self.ship_map
-                    or self.ship_map[sibling] == Tile.UNKNOWN
-                ):
-                    has_unknown_neighbors = True
+        visited: Set[Position] = set()
+        frontier: Set[Position] = set([self.pos])
 
-            if has_unknown_neighbors:
-                yield position
+        while frontier:
+            current = frontier.pop()
+            visited.add(current)
+            for d in Direction:
+                next_pos = add_to_position(current, d)
+                t = self.ship_map[next_pos]
+                if t == Tile.UNKNOWN:
+                    yield next_pos
+                elif t == Tile.TRAVERSABLE or t == Tile.OXYGEN_STATION:
+                    if next_pos not in visited:
+                        frontier.add(next_pos)
 
     def compute_path(self, dest: Position) -> List[Direction]:
         # can't route to wall or unknown tile

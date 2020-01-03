@@ -27,7 +27,7 @@ def parse_map(map_str) -> RepairDroid:
 
 
 EXAMPLE_MAP = """
-..##
+..##.
 ....#
 ..#D#
 ###.#
@@ -44,7 +44,7 @@ class TestRepairDroid:
 
     # (0,0) is the upper-left position in the map string, not where the robot is
     params = [
-        (parse_map(EXAMPLE_MAP), {(0, 0), (1, 0), (0, 1), (0, 2), (3, 3)}),
+        (parse_map(EXAMPLE_MAP), {(-1, 0), (-1, 1), (-1, 2), (0, -1), (1, -1), (3, 4)}),
         (parse_map(EXAMPLE_MAP_NO_EXPLORABLE), set()),
     ]
     ids = ["EXAMPLE_MAP", "EXAMPLE_MAP_NO_EXPLORABLE"]
