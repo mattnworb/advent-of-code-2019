@@ -2,6 +2,7 @@ from collections import Counter
 from typing import Dict, Tuple, Optional, Iterator, List, Set, Union
 from enum import Enum, unique
 from computer import Computer, RunResult
+import time
 
 
 @unique
@@ -20,6 +21,21 @@ class Direction(Enum):
     WEST = 3
     EAST = 4
 
+    def opposite(self):
+        if self == Direction.NORTH:
+            return Direction.SOUTH
+
+        if self == Direction.SOUTH:
+            return Direction.NORTH
+
+        if self == Direction.EAST:
+            return Direction.WEST
+
+        if self == Direction.WEST:
+            return Direction.EAST
+
+        raise ValueError
+
     @staticmethod
     def from_str(s: str) -> "Direction":
         if s == "N":
@@ -33,21 +49,43 @@ class Direction(Enum):
         raise ValueError()
 
 
-Position = Tuple[int, int]
+class Position:
+    def __init__(self, x: int, y: int):
+        self.x = x
+        self.y = y
+
+    def __add__(self, other) -> "Position":
+        if isinstance(other, Direction):
+            if other == Direction.NORTH:
+                return Position(self.x, self.y - 1)
+
+            if other == Direction.SOUTH:
+                return Position(self.x, self.y + 1)
+
+            if other == Direction.WEST:
+                return Position(self.x - 1, self.y)
+
+            if other == Direction.EAST:
+                return Position(self.x + 1, self.y)
+
+        return NotImplemented
+
+    def __lt__(self, value):
+        if isinstance(value, Position):
+            return (self.x, self.y) < (value.x, value.y)
+        return NotImplemented
+
+    def __hash__(self):
+        return hash((self.x, self.y))
+
+    def __eq__(self, value):
+        return isinstance(value, Position) and self.x == value.x and self.y == value.y
+
+    def __repr__(self):
+        return f"Position({self.x}, {self.y})"
+
+
 ShipMap = Dict[Position, Tile]
-
-
-def add_to_position(position: Position, direction: Direction) -> Position:
-    if direction == Direction.NORTH:
-        return (position[0], position[1] - 1)
-    if direction == Direction.SOUTH:
-        return (position[0], position[1] + 1)
-    if direction == Direction.WEST:
-        return (position[0] - 1, position[1])
-    if direction == Direction.EAST:
-        return (position[0] + 1, position[1])
-
-    raise ValueError()
 
 
 class RepairDroid:
@@ -58,14 +96,13 @@ class RepairDroid:
         self.ship_map: ShipMap = {}
 
         # the robot's initial position is traversable by definition
-        self.pos = (0, 0)
+        self.pos = Position(0, 0)
         self.ship_map[self.pos] = Tile.TRAVERSABLE
 
         self.oxygen_station_pos = None
 
-    def known_map(self) -> ShipMap:
-        """Return a copy of the known map"""
-        return dict(self.ship_map)
+        self.moves_attempted = 0
+        self.moves_made = 0
 
     def current_pos(self) -> Position:
         return self.pos
@@ -73,133 +110,12 @@ class RepairDroid:
     def oxygen_station(self) -> Optional[Position]:
         return self.oxygen_station_pos
 
-    def has_explorable_positions(self) -> bool:
-        """Test if there are any positions on the map with unknown regions next to them."""
-        # any(self.explorable_positions()) will treat a position like (0, 0) as False
-        return any(True for p in self.explorable_positions())
-
-    def explorable_positions(self) -> Iterator[Position]:
-        """
-        Iterate over UNKNOWN positions on the map that are reachable from the
-        robot's current position. In other words, this iterator gives the set of
-        positions the robot could move to and learn something new about the map.
-        """
-
-        visited: Set[Position] = set()
-        frontier: Set[Position] = set([self.pos])
-
-        while frontier:
-            current = frontier.pop()
-            visited.add(current)
-            for d in Direction:
-                next_pos = add_to_position(current, d)
-                t = self.ship_map.get(next_pos, Tile.UNKNOWN)
-                if t == Tile.UNKNOWN:
-                    yield next_pos
-                elif t == Tile.TRAVERSABLE or t == Tile.OXYGEN_STATION:
-                    if next_pos not in visited:
-                        frontier.add(next_pos)
-
-    def compute_path(
-        self, dest: Position, start_pos: Optional[Position] = None,
-    ) -> List[Direction]:
-        # can't route to wall
-        assert self.ship_map.get(dest) != Tile.WALL, "dest cannot be wall"
-
-        unvisited: Set[Position] = set()
-        distances: Dict[Position, Union[int, float]] = {}
-        for pos, tile in self.ship_map.items():
-            if tile == Tile.TRAVERSABLE or tile == Tile.OXYGEN_STATION:
-                unvisited.add(pos)
-                for neighbor in self.nonwall_neighbors(pos):
-                    unvisited.add(neighbor)
-
-        if not start_pos:
-            start_pos = self.pos
-
-        inf = float("inf")
-        distances = {pos: inf for pos in unvisited}
-        distances[start_pos] = 0
-
-        prev: Dict[Position, Position] = {}
-
-        while unvisited:
-            smallest_distance, u = None, None
-            for node in unvisited:
-                distance = distances[node]
-                if smallest_distance is None or distance < smallest_distance:
-                    smallest_distance = distance
-                    u = node
-
-            if smallest_distance == inf:
-                raise ValueError(f"no path to {dest} from {start_pos}")
-
-            assert u is not None
-            unvisited.remove(u)
-
-            if u == dest:
-                break
-
-            for neighbor in self.nonwall_neighbors(u):
-                if (
-                    self.ship_map.get(neighbor, Tile.UNKNOWN) == Tile.UNKNOWN
-                    and neighbor != dest
-                ):
-                    # if the neighbor is unknown, only score it if it is the dest
-                    continue
-                if neighbor in unvisited:
-                    tentative = distances[u] + 1
-                    if tentative < distances[neighbor]:
-                        distances[neighbor] = tentative
-                        prev[neighbor] = u
-
-        # print("Dest:", dest)
-
-        # min_pos = min(distances)
-        # max_pos = max(distances)
-
-        # print("Distances:")
-        # for y in range(min_pos[1], max_pos[1] + 1):
-        #     line = ""
-        #     for x in range(min_pos[0], max_pos[0] + 1):
-        #         p = (x, y)
-        #         if p not in distances or distances[p] == inf:
-        #             line += "?"
-        #         else:
-        #             line += str(distances[p])
-        #     print(line)
-
-        path: List[Position] = []
-        current = dest
-        while current in prev and current != start_pos:
-            path.insert(0, current)
-            current = prev[current]
-
-        directions = []
-        current = start_pos
-        for node in path:
-            # what direction takes us from current to node?
-            x1, y1 = current
-            x2, y2 = node
-            if x1 == x2 and y1 == y2 + 1:
-                d = Direction.NORTH
-            elif x1 == x2 and y1 == y2 - 1:
-                d = Direction.SOUTH
-            elif x1 == x2 + 1 and y1 == y2:
-                d = Direction.WEST
-            elif x1 == x2 - 1 and y1 == y2:
-                d = Direction.EAST
-            else:
-                raise ValueError("oops")
-            # print(f'current={current} to {node}: {d}')
-            directions.append(d)
-            current = node
-        return directions
-
-    def nonwall_neighbors(self, node: Position) -> Iterator[Position]:
+    def nonwall_neighbors(
+        self, node: Position, allow_unknown=True
+    ) -> Iterator[Position]:
         """Return the non-WALL neighors of a given node. Will return UNKNOWN neighbors."""
         for d in Direction:
-            sibling = add_to_position(node, d)
+            sibling = node + d
             if self.ship_map.get(sibling) != Tile.WALL:
                 yield sibling
 
@@ -208,7 +124,13 @@ class RepairDroid:
 
     def move_once(self, direction: Direction):
         self.computer.add_input(direction.value)
+
+        # start = time.monotonic()
         outputs, result = self.computer.run(until_blocked=True)
+        # elapsed = time.monotonic() - start
+        # print(f"Computer run took {elapsed} seconds")
+
+        self.moves_attempted += 1
 
         assert (
             result == RunResult.BLOCK_ON_INPUT
@@ -224,7 +146,7 @@ class RepairDroid:
         #   its new position is the location of the oxygen system.
         assert output in [0, 1, 2]
 
-        intended = add_to_position(self.pos, direction)
+        intended = self.pos + direction
 
         if output == 0:
             self.ship_map[intended] = Tile.WALL
@@ -232,22 +154,18 @@ class RepairDroid:
         if output == 1:
             self.ship_map[intended] = Tile.TRAVERSABLE
             self.pos = intended
+            self.moves_made += 1
 
         if output == 2:
             self.ship_map[intended] = Tile.OXYGEN_STATION
             self.pos = intended
             self.oxygen_station_pos = intended
-
-        # update the map so it always reflects unknown tiles
-        for d in Direction:
-            neighbor = add_to_position(self.pos, d)
-            if neighbor not in self.ship_map:
-                self.ship_map[neighbor] = Tile.UNKNOWN
+            self.moves_made += 1
 
     def print_screen(self):
         min_x, max_x, min_y, max_y = 0, 0, 0, 0
         for position in self.ship_map:
-            x, y = position
+            x, y = position.x, position.y
             min_x = min(min_x, x)
             max_x = max(max_x, x)
             min_y = min(min_y, y)
@@ -259,7 +177,7 @@ class RepairDroid:
         for y in range(min_y, max_y + 1):
             line = ""
             for x in range(min_x, max_x + 1):
-                p = (x, y)
+                p = Position(x, y)
                 if p == self.pos:
                     ch = "D"
                 elif p == (0, 0):
@@ -268,3 +186,46 @@ class RepairDroid:
                     ch = self.ship_map.get(p, Tile.UNKNOWN).value
                 line += ch
             print(line)
+
+    def bfs_score(self, start: Position) -> Dict[Position, int]:
+        """
+        Compute the distance of each tile in the map from the start position.
+        Map must be fully explored.
+        """
+
+        assert start in self.ship_map
+        assert self.ship_map[start] in [Tile.TRAVERSABLE, Tile.OXYGEN_STATION]
+
+        queue: List[Position] = [start]
+        visited: Set[Position] = set()
+        dist = {start: 0}
+
+        while queue:
+            node = queue.pop(0)
+            visited.add(node)
+            for d in Direction:
+                neighbor = node + d
+                if (
+                    neighbor in self.ship_map
+                    and neighbor not in visited
+                    and self.ship_map[neighbor] != Tile.WALL
+                    and self.ship_map[neighbor] != Tile.UNKNOWN
+                ):
+                    queue.append(neighbor)
+                    dist[neighbor] = dist[node] + 1
+        return dist
+
+    def explore_entire_map(self):
+        # dfs
+        def dfs(p: Position):
+            for d in Direction:
+                next_p = p + d
+                if next_p not in self.ship_map:
+                    # print(f'at {p}, moving to {d}')
+                    self.move_once(d)
+                    # did we actually move?
+                    if self.pos == next_p:
+                        dfs(next_p)
+                        self.move_once(d.opposite())
+
+        dfs(self.pos)
