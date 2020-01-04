@@ -57,47 +57,33 @@ if __name__ == "__main__":
     print("Part 1")
     robot = RepairDroid(program)
 
-    # desired_destinations = []
+    not_found = False
 
     rounds = 10000
     for step in range(1, rounds + 1):
-        # robot.print_screen()
-
-        # next_move = choose_next_move_manually(robot)
-        # next_move = choose_next_move_randomly(robot)
         next_move = choose_next_move_based_on_explorable_positions(robot)
 
         if not next_move:
+            print(f"No more positions to explore on map after {step} steps")
             # no more explorable moves?
             break
 
-        # desired_destinations.append(add_to_position(robot.current_pos(), next_move))
-
         robot.move_once(next_move)
 
-        if robot.oxygen_station():
+        if robot.oxygen_station() and not_found:
             print(f"found oxygen station after {step} steps")
-            break
+            not_found = True
+            # can break here for Part 1, but for Part 2 we want to fully explore the map
 
         # if step % 100 == 0:
-        #     explorable = list(robot.explorable_positions())
-        #     # print(f"Step {step}, tile count: {robot.count_tiles()}, explorable positions: {len(explorable)}")
-        #     print(f"Step {step}, explorable positions: {len(explorable)}")
+        #     print('Step', step)
 
-    # print()
-    # print(f"Map after {rounds} iterations:")
-    # robot.print_screen()
-    # print()
+    robot.print_screen()
 
     station = robot.oxygen_station()
     print("Robot position:", robot.current_pos())
-    print("Found oxygen station:", station if station else "No")
+    print("Oxygen station:", station if station else "Unknown")
     print("Has unexplored positions:", robot.has_explorable_positions())
-    # print("Tile count:", robot.count_tiles())
-    # print(
-    #     "Most common destinations:",
-    #     collections.Counter(desired_destinations).most_common(10),
-    # )
 
     assert station, "Did not find oxygen station"
 
@@ -113,11 +99,6 @@ if __name__ == "__main__":
     visited_pos: Set[Position] = set()
     for move in path_to_station:
         new_robot.move_once(move)
-
-        # new_robot.print_screen()
-        # print(f"Robot position is: {new_robot.current_pos()}")
-        # print()
-
         assert new_robot.current_pos() not in visited_pos
         visited_pos.add(new_robot.current_pos())
     assert station == new_robot.current_pos()
