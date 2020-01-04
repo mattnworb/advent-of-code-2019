@@ -101,10 +101,7 @@ class RepairDroid:
                         frontier.add(next_pos)
 
     def compute_path(
-        self,
-        dest: Position,
-        start_pos: Optional[Position] = None,
-        allow_moves_to_unknown=True,
+        self, dest: Position, start_pos: Optional[Position] = None,
     ) -> List[Direction]:
         # can't route to wall
         assert self.ship_map.get(dest) != Tile.WALL, "dest cannot be wall"
@@ -145,10 +142,10 @@ class RepairDroid:
 
             for neighbor in self.nonwall_neighbors(u):
                 if (
-                    not allow_moves_to_unknown
-                    and self.ship_map.get(neighbor, Tile.UNKNOWN) == Tile.UNKNOWN
+                    self.ship_map.get(neighbor, Tile.UNKNOWN) == Tile.UNKNOWN
+                    and neighbor != dest
                 ):
-                    # don't score the neighbor if it would count as a move into the unknown
+                    # if the neighbor is unknown, only score it if it is the dest
                     continue
                 if neighbor in unvisited:
                     tentative = distances[u] + 1
